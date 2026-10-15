@@ -36,3 +36,4 @@ h2{font-size:18px;margin:20px 0 10px}
 .attrib{border-top:1px solid var(--bd);padding:12px 16px;font-size:12px;color:var(--mut);text-align:center}
 .attrib p{margin:2px 0}
 @media (max-width:600px){.detail{grid-template-columns:1fr}.detail .p{max-width:200px}}
+.about{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:14px}.about summary{cursor:pointer;font-weight:600}

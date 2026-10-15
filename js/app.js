@@ -37,11 +37,19 @@ function errView(e) {
 }
 
 // ---- Home ----
+const ABOUT = `<details class="about"><summary>About this site</summary>
+  <p><b>CApaper</b> is a personal search tool for streaming (OTT) titles. Search for a movie or TV show and see
+  which services offer it in your country, grouped by subscription, free, ad-supported, rent and buy.</p>
+  <p><b>Bring your own token:</b> this site has no server and ships no API key. On your first visit, open
+  <a href="#/settings">Settings</a> and enter your own free <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">TMDB API key or read-access token</a>.
+  It is stored only in your browser (localStorage) and sent only to TMDB.</p>
+  <p>Your settings, search history and viewing history also stay in your browser. Nothing is collected.
+  Data: TMDB; availability: JustWatch via TMDB. No streaming or playback is provided.</p></details>`;
 let homeTab = 'trending';
 async function home() {
   const tabs = [['trending', '트렌딩'], ['movie', '인기 영화'], ['tv', '인기 TV'], ['upcoming', '공개 예정']];
   const rv = recentViews.list();
-  $app.innerHTML = `<div class="tabs" role="tablist">${tabs.map(([k, l]) =>
+  $app.innerHTML = `${ABOUT}<div class="tabs" role="tablist">${tabs.map(([k, l]) =>
     `<button data-t="${k}" aria-pressed="${k === homeTab}">${l}</button>`).join('')}</div>
     <div id="list"><p class="note">불러오는 중…</p></div>
     ${rv.length ? `<h2>최근 조회</h2><div class="grid">${rv.map(card).join('')}</div>` : ''}`;
@@ -141,7 +149,8 @@ async function detailView(type, id) {
 // ---- Settings ----
 function settingsView() {
   const s = getSettings();
-  $app.innerHTML = `<div class="set"><h2>설정</h2>
+  $app.innerHTML = `<div class="set"><h2>설정 / Settings</h2>
+    <p class="note">Enter your own TMDB token below. It is stored only in this browser and used only for requests to TMDB.</p>
     <label>TMDB API 키 (v3 키 또는 v4 읽기 토큰)<br><input id="key" type="password" autocomplete="off" value="${esc(s.apiKey)}"></label>
     <p class="note">키는 이 브라우저에만 저장되며 저장소에는 올라가지 않습니다. <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">TMDB에서 무료 발급</a></p>
     <label>국가<br><select id="country">${Object.entries(COUNTRIES).map(([k, v]) =>
