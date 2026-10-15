@@ -1,4 +1,4 @@
-# CApaper
+# OTTpaper
 
 OTT 통합 검색 웹앱 (개인용). 작품을 검색하면 국가별로 어느 OTT에서 볼 수 있는지(구독/무료/광고/대여/구매) 보여줍니다.
 계획: [docs/PLAN.md](docs/PLAN.md)
