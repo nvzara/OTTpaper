@@ -1,2 +1,13 @@
 # CApaper
-This is an Android application that allows you to view the latest trends in computing and AI via a dashboard, and explore their history of development and key milestones through a timeline.
+
+OTT 통합 검색 웹앱 (개인용). 작품을 검색하면 국가별로 어느 OTT에서 볼 수 있는지(구독/무료/광고/대여/구매) 보여줍니다.
+계획: [docs/PLAN.md](docs/PLAN.md)
+
+## 사용
+1. 저장소 Settings → Pages → Source를 **GitHub Actions**로 설정, `main`에 푸시하면 자동 배포.
+2. 사이트의 설정에서 [TMDB 무료 API 키](https://www.themoviedb.org/settings/api)를 입력(브라우저에만 저장).
+3. 로컬 실행: `python3 -m http.server` 후 http://localhost:8000
+
+## 출처
+- This product uses the TMDB API but is not endorsed or certified by TMDB.
+- 시청 제공 정보: JustWatch (TMDB watch providers 경유).
