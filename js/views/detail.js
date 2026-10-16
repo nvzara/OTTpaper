@@ -5,7 +5,7 @@ import { OTTS, COUNTRIES, ottKey, getSettings, recentViews, clippings } from '..
 import { worldwideRows } from '../advisor.js';
 import { pickTrailer } from '../filters.js';
 import { t, getLang, countryName } from '../i18n.js';
-import { $, $app, esc, fmtDate, fmtNum, typeLabel, toast, poster, grid, errView, sec, stars, lede, scriptCls, skStory } from '../ui.js';
+import { $, $app, esc, fmtDate, fmtNum, typeLabel, toast, poster, grid, errView, sec, stars, lede, scriptCls, skStory, viewGuard } from '../ui.js';
 
 let kindFilter = 'all';
 // TMDB returns status in English; show it in the interface language when we know the word.
@@ -58,11 +58,12 @@ function worldwideHtml(results) {
 export async function detailView(type, id) {
   if (type !== 'movie' && type !== 'tv' || !/^\d+$/.test(id)) { $app.innerHTML = `<div class="err">${I.info()}<span>${t('bad_url')}</span></div>`; return; }
   $app.innerHTML = skStory();
-  const s = getSettings();
+  const s = getSettings(), alive = viewGuard();
   try {
     const [d, pv] = await Promise.all([T.detail(type, id), T.providers(type, id)]);
     // Titles without an overview in the chosen language fall back to the English one.
     if (!d.overview && getLang() !== 'en') d.overview = await T.overviewEn(type, id).catch(() => '');
+    if (!alive()) return;
     const title = d.title || d.name || '—';   // a response without any title must not break the page
     document.title = `${title} — OTTpaper`;
     recentViews.add({ id: d.id, media_type: type, title, poster_path: d.poster_path,
@@ -123,5 +124,5 @@ export async function detailView(type, id) {
       document.querySelectorAll('#kf [data-k]').forEach(x => x.setAttribute('aria-pressed', x === b));
       $('#prov').innerHTML = provHtml(pr, s);
     });
-  } catch (e) { $app.innerHTML = errView(e); }
+  } catch (e) { if (alive()) $app.innerHTML = errView(e); }
 }

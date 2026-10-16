@@ -3,7 +3,7 @@ import { I } from '../icons.js';
 import { getSettings } from '../store.js';
 import { NEWS_SERVICES, newsMatches } from '../filters.js';
 import { t, countryName } from '../i18n.js';
-import { $, $app, esc, httpUrl, fmtDate, pageHead, empty, sec, skStory } from '../ui.js';
+import { $, $app, esc, httpUrl, fmtDate, pageHead, empty, sec, skStory, viewGuard } from '../ui.js';
 
 // news/news.<CC>.json is generated at deploy time by scripts/fetch-news.mjs (one file per country edition).
 export async function newsView() {
@@ -12,7 +12,9 @@ export async function newsView() {
     extra: `<p class="byline"><span class="edition-tag">${esc(t('news_edition', cname))}</span> <span id="updated"></span></p>` }) +
     `<div id="wire">${skStory()}</div><p class="note center">${t('news_attrib')}</p>`;
   let d = null;
+  const alive = viewGuard();
   try { const r = await fetch(`news/news.${encodeURIComponent(cc)}.json`, { cache: 'no-cache' }); if (r.ok) d = await r.json(); } catch {}
+  if (!alive()) return;
   const items = Array.isArray(d?.items) ? d.items.slice(0, 60) : [];
   if (!items.length) { $('#wire').innerHTML = empty(t('news_empty')); return; }
   $('#updated').textContent = '· ' + t('news_updated', fmtDate(d.generatedAt, { dateStyle: 'medium', timeStyle: 'short' }));

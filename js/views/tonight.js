@@ -4,7 +4,7 @@ import { I } from '../icons.js';
 import { getSettings } from '../store.js';
 import { MOODS, resolveProviderIds, buildDiscoverParams, pickOne, LENGTHS } from '../tonight.js';
 import { t } from '../i18n.js';
-import { $, $app, esc, typeLabel, poster, grid, errView, pageHead, empty, sec, stars, lede, clip, scriptCls, skStory, yearOfItem } from '../ui.js';
+import { $, $app, esc, typeLabel, poster, grid, errView, pageHead, empty, sec, stars, lede, clip, scriptCls, skStory, yearOfItem, viewGuard } from '../ui.js';
 
 const tn = { type: 'movie', mood: '', len: 0, mine: true };
 export function tonightView() {
@@ -32,7 +32,7 @@ export function tonightView() {
 let tnList = [], tnSeen = new Set();
 let spinNo = 0;
 async function tonightSpin() {
-  const s = getSettings(), out = $('#tnOut'), no = ++spinNo;
+  const s = getSettings(), out = $('#tnOut'), no = ++spinNo, alive = viewGuard();
   out.innerHTML = skStory();
   try {
     let ids = [], noprov = false;
@@ -42,11 +42,11 @@ async function tonightSpin() {
     }
     const params = buildDiscoverParams({ type: tn.type, mood: tn.mood, maxRuntime: tn.len || 0, region: s.country, providerIds: ids });
     const found = ((await T.discover(tn.type, params)).results || []).slice(0, 20).map(x => ({ ...x, media_type: tn.type }));
-    if (no !== spinNo) return;   // a newer request has taken over (double click)
+    if (no !== spinNo || !alive()) return;   // a newer request has taken over (double click), or the reader left
     tnList = found; tnSeen = new Set();
     out.dataset.noprov = noprov ? '1' : '';
     showTonight();
-  } catch (e) { if (no === spinNo) out.innerHTML = errView(e); }
+  } catch (e) { if (no === spinNo && alive()) out.innerHTML = errView(e); }
 }
 function showTonight() {
   const out = $('#tnOut'), pick = pickOne(tnList, tnSeen);

@@ -4,7 +4,7 @@ import { I } from '../icons.js';
 import { OTTS, ottName, getSettings, clippings } from '../store.js';
 import { computeCoverage } from '../advisor.js';
 import { t, getLang, countryName } from '../i18n.js';
-import { $, $app, esc, grid, errView, pageHead, empty } from '../ui.js';
+import { $, $app, esc, grid, errView, pageHead, empty, viewGuard } from '../ui.js';
 
 export function clippingsView() {
   const l = clippings.list();
@@ -15,7 +15,7 @@ export function clippingsView() {
   if (l.length) { $('#adv').onclick = () => advise(l); $('#print').onclick = () => window.print(); }
 }
 async function advise(clips) {
-  const s = getSettings(), out = $('#advOut'), list = clips.slice(0, 60); // cap requests; provider data is cached 3 days
+  const s = getSettings(), out = $('#advOut'), alive = viewGuard(), list = clips.slice(0, 60); // cap requests; provider data is cached 3 days
   const pv = new Map();
   let done = 0, next = 0;
   out.innerHTML = `<p class="note" role="status">${esc(t('adv_running', 0, list.length))}</p>`;
@@ -24,10 +24,12 @@ async function advise(clips) {
       const c = list[next++];
       try { pv.set(`${c.media_type}:${c.id}`, (await T.providers(c.media_type, c.id)).results?.[s.country] || null); }
       catch (e) { if (e.message === 'NO_KEY' || e.message === 'BAD_KEY') throw e; pv.set(`${c.media_type}:${c.id}`, null); }
+      if (!alive()) return;
       out.innerHTML = `<p class="note" role="status">${esc(t('adv_running', ++done, list.length))}</p>`;
     }
   };
-  try { await Promise.all([worker(), worker(), worker(), worker()]); } catch (e) { out.innerHTML = errView(e); return; }
+  try { await Promise.all([worker(), worker(), worker(), worker()]); } catch (e) { if (alive()) out.innerHTML = errView(e); return; }
+  if (!alive()) return;
   const r = computeCoverage(list, pv, new Set(s.myOtts));
   const names = Object.fromEntries(OTTS.map(o => [o.key, ottName(o, getLang())]));
   const link = c => `<a href="#/title/${c.media_type}/${Number(c.id)}">${esc(c.title)}</a>`;

@@ -6,7 +6,7 @@ import { onMyServices } from '../advisor.js';
 import { DECADES, SORTS, filterSearch } from '../filters.js';
 import { t } from '../i18n.js';
 import { refreshSuggest, closeSuggest } from '../suggest.js';
-import { $, $app, esc, grid, errView, sec, pageHead, empty, skGrid } from '../ui.js';
+import { $, $app, esc, grid, errView, sec, pageHead, empty, skGrid, viewGuard } from '../ui.js';
 
 // ---- Search ----
 export async function searchView(q) {
@@ -24,8 +24,10 @@ export async function searchView(q) {
   recentSearch.add(q);
   refreshSuggest();
   $app.innerHTML = `${pageHead({ kicker: t('nav_search'), title: esc(t('search_results', q)), long: q.length > 16, extra: '<p class="byline" id="count">&nbsp;</p>' })}<div id="list">${skGrid(12, t('searching'))}</div>`;
+  const alive = viewGuard();
   try {
     const d = await T.search(q);
+    if (!alive()) return;
     const items = d.results.filter(x => x.media_type === 'movie' || x.media_type === 'tv');
     const mine = new Set(getSettings().myOtts);
     const st = { decade: 'any', sort: 'rel', onlyMine: false }, avail = new Set();   // avail: "type:id" keys on my services
@@ -54,23 +56,23 @@ export async function searchView(q) {
       if (el && !el.classList.contains('on-mine')) { el.classList.add('on-mine'); el.querySelector('.p')?.insertAdjacentHTML('beforeend', `<span class="avail">${I.check()} ${t('badge_mine')}</span>`); }
     };
     render();
-    if (mine.size) markAvailability(items.slice(0, 24), mine, k => { avail.add(k); decorate(k); });
-  } catch (e) { $('#list').innerHTML = errView(e); }
+    if (mine.size) markAvailability(items.slice(0, 24), mine, alive, k => { avail.add(k); decorate(k); });
+  } catch (e) { if (alive()) $('#list').innerHTML = errView(e); }
 }
 
 // Find search results that are on one of MY services (background; provider data is cached 3 days) and report each via onHit.
-async function markAvailability(items, mine, onHit) {
+async function markAvailability(items, mine, alive, onHit) {
   const country = getSettings().country;
   let next = 0;
   const worker = async () => {
-    while (next < items.length) {
+    while (next < items.length && alive()) {
       const it = items[next++];
       try {
         const pv = await T.providers(it.media_type, it.id);
-        if (onMyServices(pv.results?.[country], mine).length) onHit(`${it.media_type}:${Number(it.id)}`);
+        if (alive() && onMyServices(pv.results?.[country], mine).length) onHit(`${it.media_type}:${Number(it.id)}`);
       } catch (e) { if (e.message === 'NO_KEY' || e.message === 'BAD_KEY') return; }
     }
   };
   await Promise.all([worker(), worker(), worker(), worker()]);
-  $('#availNote')?.remove();
+  if (alive()) $('#availNote')?.remove();
 }

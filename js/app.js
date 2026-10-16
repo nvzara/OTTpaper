@@ -2,7 +2,7 @@
 import { I } from './icons.js';
 import { getSettings } from './store.js';
 import { t, getLang, countryName } from './i18n.js';
-import { $, $app, esc, hooks, applyTheme, fmtDate } from './ui.js';
+import { $, $app, esc, hooks, applyTheme, fmtDate, beginView } from './ui.js';
 import { home } from './views/home.js';
 import { searchView } from './views/search.js';
 import { initSuggest, refreshSuggest, closeSuggest } from './suggest.js';
@@ -38,6 +38,7 @@ function applyLang() {
 
 // ---- Router ----
 function route() {
+  beginView();
   const h = location.hash.slice(1) || '/';
   const [path, qs] = h.split('?');
   const parts = path.split('/').filter(Boolean);

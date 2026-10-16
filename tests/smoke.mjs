@@ -418,6 +418,30 @@ for (const [label, ls, hash, api, expect] of [
   await c.close();
 }
 
+// 21. late responses: leaving a screen before its data arrives must not repaint over the new screen
+for (const [label, first, then, expect] of [
+  ['title page', '/title/movie/111', '/clippings', 'SCRAPBOOK'],
+  ['search results', '/search?q=slowone', '/tonight', 'EVENING FEATURE'],
+  ['search results replaced by a newer search', '/search?q=slowone', '/search?q=fast', 'QUICK RESULT'],
+]) {
+  const c = await browser.newContext({ serviceWorkers: 'block' });
+  const pg = await c.newPage(); const pe = [];
+  pg.on('pageerror', e => pe.push(e.message));
+  await pg.addInitScript(() => localStorage.setItem('settings', JSON.stringify({ apiKey: 'k', onboarded: true, lang: 'en', country: 'KR', myOtts: [] })));
+  await pg.route('https://api.themoviedb.org/**', async r => {
+    const u = r.request().url();
+    if (/slowone|\/movie\/111/.test(u)) await new Promise(res => setTimeout(res, 900));
+    r.fulfill({ json: /watch\/providers/.test(u) ? { results: {} } : /\/movie\/111/.test(u) ? { id: 111, title: 'Slow Film' } : { results: [{ id: 5, media_type: 'movie', title: /slowone/.test(u) ? 'Late Result' : 'Quick Result' }] } });
+  });
+  await pg.route(/image\.tmdb/, r => r.fulfill({ status: 204 }));
+  await pg.goto(base + '/#/'); await pg.waitForSelector('#q');
+  await pg.evaluate(h => { location.hash = h; }, first); await pg.waitForTimeout(150);
+  await pg.evaluate(h => { location.hash = h; }, then); await pg.waitForTimeout(1500);
+  const txt = (await pg.locator('#app').innerText()).toUpperCase();
+  ok(txt.includes(expect) && !txt.includes('SLOW FILM') && !txt.includes('LATE RESULT') && pe.length === 0, `late response is ignored: ${label}` + (pe.length ? ': ' + pe[0] : ''));
+  await c.close();
+}
+
 ok(errors.length === 0, 'no JS errors' + (errors.length ? ': ' + errors.join('; ') : ''));
 await browser.close(); server.close();
 process.exit(fails ? 1 : 0);

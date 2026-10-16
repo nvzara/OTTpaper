@@ -4,7 +4,7 @@ import { I } from '../icons.js';
 import { OTTS, ottName, getSettings, recentViews, clippings, noticeSeen } from '../store.js';
 import { onMyServices, pickLead } from '../advisor.js';
 import { t, getLang } from '../i18n.js';
-import { $app, esc, typeLabel, notice, poster, grid, errView, $, sec, stars, lede, clip, scriptCls, skGrid, skStory, yearOfItem, httpUrl } from '../ui.js';
+import { $app, esc, typeLabel, notice, poster, grid, errView, $, sec, stars, lede, clip, scriptCls, skGrid, skStory, yearOfItem, httpUrl, viewGuard } from '../ui.js';
 
 let homeTab = 'trending';
 const TABS = ['trending', 'movie', 'tv', 'upcoming'];
@@ -44,18 +44,18 @@ export function home() {
 }
 
 async function loadList() {
-  const $l = $('#list'), tab = homeTab;
+  const $l = $('#list'), tab = homeTab, alive = viewGuard();
   $l.innerHTML = skGrid(12);
   try {
     const d = tab === 'trending' ? await T.trending() : tab === 'upcoming' ? await T.upcoming() : await T.popular(tab);
     const kind = tab === 'movie' || tab === 'upcoming' ? 'movie' : tab === 'tv' ? 'tv' : null;
-    if (tab === homeTab && $('#list')) $l.innerHTML = grid(d.results, kind);
-  } catch (e) { if ($('#list')) $l.innerHTML = errView(e); }
+    if (tab === homeTab && alive()) $l.innerHTML = grid(d.results, kind);
+  } catch (e) { if (tab === homeTab && alive()) $l.innerHTML = errView(e); }
 }
 
 // ---- Today's lead: the front-page story, one pick per day (prefers titles on my services) ----
 async function renderLead() {
-  const el = $('#lead');
+  const el = $('#lead'), alive = viewGuard();
   try {
     const s = getSettings(), mine = new Set(s.myOtts);
     const items = (await T.trending()).results.filter(x => x.media_type === 'movie' || x.media_type === 'tv').slice(0, 12);
@@ -66,10 +66,12 @@ async function renderLead() {
         try { const keys = onMyServices((await T.providers(it.media_type, it.id)).results?.[s.country], mine); avail.set(`${it.media_type}:${it.id}`, keys.length); names.set(`${it.media_type}:${it.id}`, keys); } catch {} } };
       await Promise.all([worker(), worker(), worker(), worker()]);
     }
+    if (!alive()) return;
     const day = new Date().toLocaleDateString('en-CA');
     const pick = pickLead(items, avail, day);
     if (!pick || !$('#lead')) { el.innerHTML = ''; return; }
     const it = pick.item, d = await T.detail(it.media_type, it.id);
+    if (!alive()) return;
     const title = it.title || it.name, href = `#/title/${it.media_type}/${Number(it.id)}`, y = yearOfItem(it);
     const over = clip(d.overview || it.overview || '', 520);
     const on = (names.get(`${it.media_type}:${it.id}`) || []).map(k => ottName(OTTS.find(o => o.key === k), getLang()));
@@ -92,16 +94,17 @@ async function renderLead() {
         return `<article class="second"><p class="kicker">${esc(typeLabel(x.media_type))}${xy ? ' · ' + esc(xy) : ''}</p>
           <h3 class="${scriptCls(xt).trim()}"><a href="#/title/${x.media_type}/${Number(x.id)}">${esc(xt)}</a></h3>${stars(x.vote_average)}${on ? ` <span class="mine-tag">${I.check()}${esc(t('badge_mine'))}</span>` : ''}${x.overview ? `<p>${esc(clip(x.overview, 150))}</p>` : ''}</article>`;
       }).join('')}</div>`;
-  } catch { if ($('#lead')) el.innerHTML = ''; }
+  } catch { if (alive()) el.innerHTML = ''; }
 }
 
 // ---- Rail: the latest headlines from this country's edition of The Wire (same-origin file, may be absent) ----
 async function renderWire() {
+  const alive = viewGuard();
   try {
     const r = await fetch(`news/news.${encodeURIComponent(getSettings().country)}.json`);
     const items = r.ok ? (await r.json())?.items : null;
     const el = $('#railWire');
-    if (!el || !Array.isArray(items) || !items.length) return;
+    if (!alive() || !el || !Array.isArray(items) || !items.length) return;
     el.innerHTML = `<h2 class="box-h">${t('rail_wire')}</h2><ul class="heads">${items.slice(0, 4).map(n => `<li><span class="kicker">${esc(n.source)}</span>
       <a href="${esc(httpUrl(n.link))}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></li>`).join('')}</ul>
       <p class="jump"><a href="#/news">${t('nav_news')}&nbsp;→</a></p>`;

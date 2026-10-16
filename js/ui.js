@@ -10,6 +10,11 @@ export const typeLabel = x => t(x === 'movie' ? 'type_movie' : 'type_tv');
 export const $ = (sel, root = document) => root.querySelector(sel);
 // Late-bound callbacks set by app.js (lets views re-render the page chrome without importing app.js).
 export const hooks = { applyLang() {}, route() {} };
+// A screen loads data asynchronously; if the reader has moved on by then, its late result must not be drawn.
+// route() starts a new view; a screen takes a guard when it starts and checks it after each await.
+let viewNo = 0;
+export const beginView = () => { viewNo++; };
+export const viewGuard = () => { const n = viewNo; return () => n === viewNo; };
 
 // Theme / font / size are plain data-attributes on <html>; styles live in css/style.css.
 export function applyTheme() {
