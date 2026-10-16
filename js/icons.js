@@ -28,5 +28,6 @@ export const I = {
   news: () => svg('<path d="M5 4h11v16H7a2 2 0 0 1-2-2z"/><path d="M16 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/>'),
   bookmark: filled => svg('<path d="M6 4h12v17l-6-4-6 4z"/>', filled ? 'filled' : ''),
   type: () => svg('<path d="M4 7V5h16v2M12 5v14M9 19h6"/>'),
+  moon: () => svg('<path d="M20 14.5A8 8 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>'),
   sparkle: () => svg('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>'),
 };

@@ -50,3 +50,5 @@ export const detail = (type, id) =>
 export const providers = (type, id) => api(`/${type}/${id}/watch/providers`, {}, 3 * DAY);
 // English overview, used when a title has no overview in the selected language.
 export const overviewEn = async (type, id) => (await api(`/${type}/${id}`, { language: 'en-US' }, 7 * DAY)).overview || '';
+export const discover = (type, params) => api(`/discover/${type}`, params, DAY / 4);
+export const providerList = (type, region) => api(`/watch/providers/${type}`, { watch_region: region }, 7 * DAY);

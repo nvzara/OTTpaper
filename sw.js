@@ -1,7 +1,7 @@
 // OTTpaper service worker: offline app shell. Same-origin static files only.
 // It NEVER touches cross-origin requests, so TMDB API calls (and the API key) never pass through or get cached here.
 const CACHE = 'ottpaper-v1';   // bump to force old caches to be dropped
-const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'js/tmdb.js', 'js/store.js', 'js/i18n.js', 'js/icons.js', 'js/advisor.js',
+const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'js/tmdb.js', 'js/store.js', 'js/i18n.js', 'js/icons.js', 'js/advisor.js', 'js/tonight.js',
   'manifest.webmanifest', 'icons/icon.svg',
   'fonts/playfair-display-latin-700-normal.woff2', 'fonts/playfair-display-latin-900-normal.woff2', 'fonts/playfair-display-latin-400-italic.woff2',
   'fonts/source-serif-4-latin-400-normal.woff2', 'fonts/source-serif-4-latin-700-normal.woff2', 'fonts/source-serif-4-latin-400-italic.woff2'];

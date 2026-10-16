@@ -2,7 +2,7 @@
 
 **Core:** OTT unified search is the main feature — every iteration must keep search/where-to-watch fast, correct and easy.
 **Identity:** a newspaper (paper tones, serif, rules, columns) + original features that only a static GitHub Pages site can do.
-**Hard rules:** see `docs/ATTRIBUTION.md`. Keep MIT + credits correct. Run all tests before every push (`node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs`). Keep the three languages in sync. Small, verified, well-organized changes; update README/ATTRIBUTION when behaviour or third-party use changes.
+**Hard rules:** see `docs/ATTRIBUTION.md`. Keep MIT + credits correct. Run all tests before every push (`node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs`). Keep the three languages in sync. Small, verified, well-organized changes; update README/ATTRIBUTION when behaviour or third-party use changes.
 
 ## Done
 - [x] Search, detail with where-to-watch (per type, my OTT first), tabs, history
@@ -16,7 +16,7 @@
 2. ~~Best subscription for my clippings~~ (done: Subscription advisor)
 3. **Search upgrades** — done: "on my services" badge + filter, `/` shortcut. Left: year/type filters, suggestions, voice search (NOTE: Chrome's Web Speech API sends audio to Google servers — conflicts with our no-third-party/privacy stance; skip unless a fully on-device option exists).
 4. ~~Worldwide availability~~ (done)
-5. Today's front page — lead story done; left: "what to watch tonight" picker by mood/length.
+5. ~~Today's front page~~ (done: lead story + Tonight picker)
 6. ~~PWA~~ (done: manifest, sw.js offline shell, original icon)
 7. **Print edition** — print stylesheet polish ("print my clippings").
 8. **Share** — copyable deep links; Open Graph meta.
@@ -25,6 +25,7 @@
 
 ## Iteration log
 - v1: newspaper theme, masthead, The Wire, attribution doc, roadmap.
+- v8: Tonight picker (js/tonight.js; uses TMDB discover + provider filter), nav labels for a11y. Deploy 13 (PWA) green.
 - v7: PWA (installable, offline shell; CSP gained manifest-src/worker-src 'self'; sw ignores cross-origin). Lesson: a silent string-replace missed the register call — tests now assert it.
 - v6: Today's lead story on Home (pickLead in advisor.js, unit-tested). Deploys 1-11 green.
 - v5: search results badged/filterable by my services; worldwide availability table on title pages; fixed poster-placeholder overflow.

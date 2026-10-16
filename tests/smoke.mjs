@@ -29,7 +29,8 @@ page.on('request', r => origins.add(new URL(r.url()).origin));
 await page.route('https://api.themoviedb.org/**', r => {
   const u = r.request().url();
   let j = { results: [{ id: 1, media_type: 'movie', title: '<b>테스트</b>', poster_path: '/a.jpg', release_date: '2020-01-01', vote_average: 7.5 }] };
-  if (u.includes('/watch/providers')) j = { results: { KR: { link: 'https://tmdb/x',
+  if (/\/watch\/providers\/(movie|tv)\?/.test(u)) j = { results: [{ provider_id: 356, provider_name: 'Wavve' }, { provider_id: 8, provider_name: 'Netflix' }] };
+  else if (u.includes('/watch/providers')) j = { results: { KR: { link: 'https://tmdb/x',
     flatrate: [{ provider_name: 'Netflix', display_priority: 1 }, { provider_name: 'Wavve', display_priority: 2 }],
     rent: [{ provider_name: 'Google Play Movies', display_priority: 3 }] } } };
   else if (u.includes('/movie/1?')) j = { id: 1, title: '테스트', overview: '줄거리', genres: [], vote_average: 7.5, runtime: 100, release_date: '2020-01-01', credits: { cast: [{ name: '배우' }] } };
@@ -286,6 +287,19 @@ ok(adv.includes('cover 2 of 2'), 'advisor: my service covers 2 of 2 clipped titl
 ok(await page.locator('.rank li').count() >= 2 && await page.locator('.rank li.mine').count() === 1, 'advisor: ranking with my service highlighted');
 ok(adv.includes('Best one to add: Netflix') || adv.includes('Nothing else'), 'advisor: add-on suggestion shown');
 ok(adv.includes('JustWatch'), 'advisor: JustWatch credited');
+
+// 18. Tonight picker
+ok(await page.evaluate(() => [...document.querySelectorAll('.nav a')].every(a => a.getAttribute('aria-label'))), 'nav links have accessible labels (icon-only on mobile)');
+await page.evaluate(() => { const st = JSON.parse(localStorage.getItem('settings')); st.myOtts = ['wavve']; st.country = 'KR'; st.lang = 'en'; localStorage.setItem('settings', JSON.stringify(st)); });
+const tnReqs = [];
+page.on('request', r => { if (r.url().includes('/discover/')) tnReqs.push(r.url()); });
+await page.goto(base + '/#/tonight'); await page.reload(); await page.waitForSelector('#spin');
+await page.click('[data-mood=comedy]'); await page.click('[data-len="90"]');
+await page.click('#spin'); await page.waitForSelector('#tnOut .lead-story h2 a');
+ok(tnReqs.some(u => u.includes('with_genres=35') && u.includes('with_runtime.lte=90') && u.includes('with_watch_providers=356') && u.includes('watch_region=KR')), 'tonight: discover filtered by mood, length and my provider ids');
+ok(await page.locator('#again').count() === 1, 'tonight: "another one" available');
+await page.click('[data-type=tv]');
+ok(await page.locator('[data-mood=horror]').count() === 0 && await page.locator('[data-mood=crime]').count() === 1, 'tonight: moods follow the media type');
 
 // 17. PWA: manifest + service worker; app shell opens offline; SW never handles cross-origin
 {
