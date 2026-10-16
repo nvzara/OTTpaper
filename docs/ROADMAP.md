@@ -3,10 +3,11 @@
 **Core:** OTT unified search — where-to-watch must stay fast, correct and easy.
 **Identity:** a newspaper (paper tones, serif type, rules, columns). Polish over feature count.
 **Rules:** see `docs/ATTRIBUTION.md` (licensing, credits, API-key safety). Before pushing, run
-`node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && node tests/contrast.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs`.
+`node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && node tests/store.mjs && node tests/contrast.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs`.
 Keep en/ko/ja in sync; list new files under `js/`, `css/`, `fonts/` in `sw.js`.
 
 ## Implemented
+- Supported countries: South Korea, Japan, English-speaking countries; recent-search index panel
 - Unified search with "on my services" badge/filter, decade + sort filters, recent-search suggestions
 - Newspaper design system across all screens (masthead + folio line, section index, section heads, kickers/decks/bylines, review stars, editor's-note empty states, quiet loading blocks, colophon, print edition)
 - Title page laid out as a newspaper article: headline, deck, byline, "streaming in" line, photo + caption, fact sheet, where-to-watch listings by type, worldwide availability, trailer link, related titles

@@ -1,7 +1,7 @@
 // View: Title page as a newspaper article (where to watch, worldwide, trailer, recommendations)
 import * as T from '../tmdb.js';
 import { I } from '../icons.js';
-import { OTTS, ottKey, getSettings, recentViews, clippings } from '../store.js';
+import { OTTS, COUNTRIES, ottKey, getSettings, recentViews, clippings } from '../store.js';
 import { worldwideRows } from '../advisor.js';
 import { pickTrailer } from '../filters.js';
 import { t, getLang, countryName } from '../i18n.js';
@@ -45,7 +45,7 @@ function glanceHtml(p, s, cname) {
     : `<span class="none">${esc(t('glance_none', cname))}</span>`}</p>`;
 }
 function worldwideHtml(results) {
-  const rows = worldwideRows(results);
+  const rows = worldwideRows(results, COUNTRIES);
   if (!rows.length) return '';
   const mine = new Set(getSettings().myOtts), cur = getSettings().country;
   return `<details class="ww"><summary>${I.globe()} ${esc(t('ww_title'))} · ${esc(t('ww_sub', rows.length))}</summary>

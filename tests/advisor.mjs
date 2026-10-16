@@ -23,9 +23,10 @@ ok(onMyServices(kr, new Set(['netflix'])).join() === 'netflix', 'onMyServices: s
 ok(onMyServices(kr, new Set(['youtube'])).join() === 'youtube', 'onMyServices: ad-supported counts');
 ok(onMyServices(kr, new Set(['apple'])).length === 0, 'onMyServices: rent/buy does not count as "on my services"');
 ok(onMyServices(null, new Set(['netflix'])).length === 0 && onMyServices(kr, new Set()).length === 0, 'onMyServices: safe on empty input');
-const ww = worldwideRows({ US: { flatrate: [{ provider_name: 'A' }, { provider_name: 'B' }] }, JP: { flatrate: [{ provider_name: 'A' }] }, FR: { rent: [{ provider_name: 'X' }] }, DE: {} });
-ok(ww.map(r => r.code).join() === 'US,JP,FR', 'worldwideRows: sorted by subscription count, empty countries dropped');
-ok(ww[2].rentBuy === 1, 'worldwideRows: counts rent/buy-only countries');
+const raw = { US: { flatrate: [{ provider_name: 'A' }, { provider_name: 'B' }] }, JP: { flatrate: [{ provider_name: 'A' }] }, KR: { rent: [{ provider_name: 'X' }] }, FR: { flatrate: [{ provider_name: 'Z' }] }, DE: {}, GB: {} };
+const ww = worldwideRows(raw, ['KR', 'JP', 'US', 'GB', 'CA', 'AU', 'NZ', 'IE']);
+ok(ww.map(r => r.code).join() === 'KR,JP,US', 'worldwideRows: only supported countries, in display order (KR, JP, English-speaking); empty/unsupported dropped');
+ok(ww[0].rentBuy === 1 && ww[2].flatrate.length === 2, 'worldwideRows: counts rent/buy-only and subscription providers');
 // pickLead
 const cand = [1, 2, 3, 4].map(id => ({ id, media_type: 'movie' }));
 const mine = new Map([['movie:3', 1]]);

@@ -4,7 +4,8 @@ import { getSettings } from './store.js';
 import { t, getLang, countryName } from './i18n.js';
 import { $, $app, esc, hooks, applyTheme, fmtDate } from './ui.js';
 import { home } from './views/home.js';
-import { searchView, refreshSuggest } from './views/search.js';
+import { searchView } from './views/search.js';
+import { initSuggest, refreshSuggest, closeSuggest } from './suggest.js';
 import { detailView } from './views/detail.js';
 import { tonightView } from './views/tonight.js';
 import { clippingsView } from './views/clippings.js';
@@ -63,11 +64,13 @@ hooks.applyLang = applyLang;
 hooks.route = route;
 $('#skip').onclick = e => { e.preventDefault(); $app.focus(); };
 $('#searchForm').onsubmit = e => {
+  closeSuggest();
   e.preventDefault();
   const q = $('#q').value.trim();
   location.hash = '/search' + (q ? '?q=' + encodeURIComponent(q) : '');
 };
 $('#searchForm').insertAdjacentHTML('afterbegin', `<span class="si">${I.search()}</span>`);
+initSuggest();
 // Once the masthead scrolls away, the sticky bar shows a small nameplate.
 if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => document.documentElement.classList.toggle('stuck', !e.isIntersecting)).observe($('#mast'));
 // Offline app shell (same-origin files only; see sw.js)

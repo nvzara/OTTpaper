@@ -32,7 +32,8 @@ await page.route('https://api.themoviedb.org/**', r => {
   if (/\/watch\/providers\/(movie|tv)\?/.test(u)) j = { results: [{ provider_id: 356, provider_name: 'Wavve' }, { provider_id: 8, provider_name: 'Netflix' }] };
   else if (u.includes('/watch/providers')) j = { results: { KR: { link: 'https://tmdb/x',
     flatrate: [{ provider_name: 'Netflix', display_priority: 1 }, { provider_name: 'Wavve', display_priority: 2 }],
-    rent: [{ provider_name: 'Google Play Movies', display_priority: 3 }] } } };
+    rent: [{ provider_name: 'Google Play Movies', display_priority: 3 }] },
+    JP: { flatrate: [{ provider_name: 'Disney Plus', display_priority: 1 }] }, FR: { flatrate: [{ provider_name: 'Canal+', display_priority: 1 }] } } };
   else if (u.includes('/movie/1?')) j = { id: 1, title: '테스트', overview: '줄거리', genres: [], vote_average: 7.5, runtime: 100, release_date: '2020-01-01', credits: { cast: [{ name: '배우' }] }, recommendations: { results: [{ id: 2, title: 'Rec Film', release_date: '2021-01-01' }] }, videos: { results: [{ site: 'YouTube', type: 'Trailer', key: 'abcDEF12345', official: true }] } };
   r.fulfill({ json: j });
 });
@@ -45,6 +46,8 @@ ok(await page.locator('.welcome h1').innerText() === 'Welcome to OTTpaper', 'fir
 await page.click('#start');
 ok(await page.locator('#toast.show').count() === 1, 'start without key is blocked with a message');
 await page.fill('#key', 'test-key');
+ok(await page.inputValue('#country') === 'US', 'first-visit default country follows the browser (en-US -> US)');
+await page.selectOption('#country', 'KR');
 await page.click('label.chip:has(.ott[value=wavve])');
 await page.click('#start');
 await page.waitForSelector('.front .notice[open]'); await page.waitForSelector('.listings .tabs');
@@ -87,6 +90,7 @@ ok(await page.locator('#prov .pill').count() === 1, 'type filter works');
 ok((await page.getAttribute('a:has-text("trailer")', 'href')) === 'https://www.youtube.com/watch?v=abcDEF12345' && (await page.getAttribute('a:has-text("trailer")', 'rel')).includes('noopener'), 'detail: trailer link (YouTube, opens safely)');
 ok(await page.locator('.recs .card').count() === 1 && (await page.locator('.recs .card .t').innerText()) === 'Rec Film', 'detail: recommendations grid');
 ok(await page.locator('.ww').count() === 1 && await page.locator('.ww tr.cur').count() === 1, 'worldwide availability table lists the current country');
+{ const rows = await page.locator('.ww tbody tr').evaluateAll(r => r.map(x => x.textContent)); ok(rows.length === 2 && /Korea/.test(rows[0]) && /Japan/.test(rows[1]) && !rows.join().includes('France'), 'availability table: only Korea, Japan and English-speaking countries, in that order'); }
 ok(await page.evaluate(() => document.documentElement.dataset.page) === 'inside' && await page.locator('.nav a[aria-current]').count() === 0, 'inside pages use the compact running head');
 
 // detail layout: poster placeholder must stay inside its column
@@ -112,11 +116,31 @@ await page.waitForSelector('.card.on-mine');
 await page.click('[data-decade="2010"]'); await page.click('[data-decade="any"]');
 ok(await page.locator('.card.on-mine .avail').count() === 1, 'search: "on my services" badge survives re-filtering');
 
-ok(await page.evaluate(() => [...document.querySelectorAll('#qlist option')].some(o => o.value === 'abc')), 'search suggestions: recent searches fill the datalist');
-ok((await page.getAttribute('#q', 'list')) === 'qlist', 'search box linked to suggestions');
+// recent-search panel
+await page.fill('#q', ''); await page.focus('#q');
+ok(await page.locator('#sug:not([hidden]) [role=option]').count() >= 1 && (await page.locator('#sug .sug-t').first().innerText()) === 'abc', 'recent searches: panel opens on focus with the latest search first');
+await page.fill('#q', 'ab');
+ok(await page.locator('#sug [role=option]').count() === 1 && (await page.locator('#sug mark').innerText()) === 'ab', 'recent searches: filters while typing and highlights the match');
+await page.fill('#q', 'zzz');
+ok(await page.locator('#sug').isHidden(), 'recent searches: panel hides when nothing matches');
+await page.fill('#q', ''); await page.keyboard.press('ArrowDown');
+ok(await page.locator('#sug [aria-selected=true]').count() === 1 && (await page.getAttribute('#q', 'aria-activedescendant')) === 'sug-0', 'recent searches: arrow keys move the highlight (aria-activedescendant)');
+await page.keyboard.press('Escape');
+ok(await page.locator('#sug').isHidden(), 'recent searches: Esc closes the panel');
+await page.fill('#q', ''); await page.focus('#q'); await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
+await page.waitForFunction(() => location.hash.startsWith('#/search?q=abc'));
+ok(await page.locator('#sug').isHidden(), 'recent searches: Enter on a highlighted entry searches it and closes the panel');
+await page.fill('#q', 'second'); await page.press('#q', 'Enter'); await page.waitForSelector('.card');
+await page.fill('#q', ''); await page.focus('#q');
+await page.click('#sug .sug-x >> nth=0');
+ok(await page.evaluate(() => JSON.parse(localStorage.getItem('rs')).join()) === 'abc', 'recent searches: the x button removes one entry');
+await page.click('#sug .sug-clear');
+ok(await page.evaluate(() => JSON.parse(localStorage.getItem('rs')).length) === 0 && await page.locator('#sug').isHidden(), 'recent searches: "Clear" removes everything');
+await page.fill('#q', 'abc'); await page.press('#q', 'Enter'); await page.waitForSelector('.card');
 
 // 6. settings: change + save, theme
 await page.click('#navSet'); await page.waitForSelector('#save');
+ok(await page.locator('#country option').count() === 8 && (await page.locator('#country option').evaluateAll(o => o.map(x => x.value))).join() === 'KR,JP,US,GB,CA,AU,NZ,IE', 'settings: country list is Korea, Japan and English-speaking countries');
 await page.selectOption('#country', 'US');
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem('settings')).country) === 'US', 'settings: country is saved as soon as it changes');
 await page.click('.seg label:has(input[value=black])');

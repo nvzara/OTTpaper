@@ -35,6 +35,7 @@ js/app.js            entry: page chrome text, router, service worker, shortcuts
 js/ui.js             shared helpers: DOM, escaping, toast, theme, newspaper blocks (cards, section heads, stars, notes, loading)
 js/views/            one file per screen: home, search, detail, tonight, clippings, news, settings
 js/tmdb.js           TMDB API client + localStorage cache (the only place that builds API requests)
+js/suggest.js        recent-search index panel under the search box
 js/store.js          settings, history, clippings, backup/restore (validated), OTT/country lists
 js/i18n.js           UI translations (en/ko/ja) + language detection
 js/advisor.js        subscription advisor, "on my services", worldwide table, today's lead (pure logic)
@@ -53,6 +54,7 @@ After moving code between modules, run an `eslint` `no-undef`/`no-unused-vars` c
 
 - First visit: welcome screen guides you through entering your own TMDB key, country and your OTT services; later visits open the main screen directly.
 - Settings can be changed anytime; everything is stored in your browser only.
+- Countries: South Korea, Japan and English-speaking countries (US, UK, Canada, Australia, New Zealand, Ireland). The first-visit default follows the browser's language/region; the availability table on title pages lists only these countries.
 - Languages: English / 한국어 / 日本語. Defaults to the browser language (English if unsupported); can be changed in Settings. Titles, overviews and cast info are requested from TMDB in the selected language (English overview as fallback). Translations may contain awkward expressions.
 - The Wire (News) by country edition: `news/news.<CC>.json` per country; local-language sources can be added per country in `news/feeds.json` (`editions`) once their terms are confirmed.
 - The Wire is built by a GitHub Action every 3 hours from public RSS feeds (headline, short excerpt and link only) and is empty locally until the first deployment. Open it at `#/news`.
@@ -65,7 +67,7 @@ After moving code between modules, run an `eslint` `no-undef`/`no-unused-vars` c
 - Tonight (`#/tonight`): choose type, mood and length; OTTpaper asks TMDB for popular titles available on *your* services (TMDB's own provider filter) and picks one; "Another one" re-rolls.
 - Today's lead: a front-page story on Home, one pick per day from trending titles, preferring ones on your own services.
 - Accessibility: contrast of every theme is checked automatically (WCAG AA), keyboard skip link, labelled section links, selected options marked by underline or check (not colour alone), reduced-motion support; friendly offline / rate-limit messages.
-- Search suggestions from your own recent searches (browser datalist), "skip to content" link, and a print edition of your clippings (print stylesheet).
+- Search suggestions from your own recent searches (a custom index panel under the search box: filter as you type, arrow keys, remove one / clear all), "skip to content" link, and a print edition of your clippings (print stylesheet).
 - Search filters: decade and sort (relevance / newest / top rated) on top of the "on my services" filter; the Wire has per-service chips.
 - Search shows an "on my services" badge (and a filter) on results available via your own services; title pages include a worldwide availability table.
 - Subscription advisor (on Clippings): checks where your clipped titles stream in your country and shows which services cover the most, how many your own services cover, and the best one to add. Uses cached availability data; no prices.
@@ -76,7 +78,7 @@ After moving code between modules, run an `eslint` `no-undef`/`no-unused-vars` c
 
 ## Tests
 
-Run before every push: `node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && node tests/contrast.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
+Run before every push: `node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && node tests/store.mjs && node tests/contrast.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
 
 ## License
 

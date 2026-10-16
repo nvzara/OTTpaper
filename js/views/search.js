@@ -5,15 +5,14 @@ import { getSettings, recentSearch } from '../store.js';
 import { onMyServices } from '../advisor.js';
 import { DECADES, SORTS, filterSearch } from '../filters.js';
 import { t } from '../i18n.js';
+import { refreshSuggest, closeSuggest } from '../suggest.js';
 import { $, $app, esc, grid, errView, sec, pageHead, empty, skGrid } from '../ui.js';
-
-// Search suggestions: the browser's own <datalist> fed with this device's recent searches (nothing is sent anywhere).
-export function refreshSuggest() { $('#qlist').innerHTML = recentSearch.list().map(x => `<option value="${esc(x)}"></option>`).join(''); }
 
 // ---- Search ----
 export async function searchView(q) {
   q = (q || '').trim();
   $('#q').value = q;
+  closeSuggest();
   if (!q) {
     const rs = recentSearch.list();
     $app.innerHTML = pageHead({ kicker: t('nav_search'), title: t('recent_searches'), deck: t('search_hint') }) + (rs.length

@@ -13,7 +13,20 @@ export const OTTS = [
   { key: 'prime', name: '프라임 비디오', en: 'Prime Video', url: 'https://www.primevideo.com/' },
   { key: 'youtube', name: '유튜브', en: 'YouTube', url: 'https://www.youtube.com/' },
 ];
-export const COUNTRIES = ['KR', 'US', 'JP', 'GB', 'CA', 'AU', 'DE', 'FR']; // display names come from Intl.DisplayNames
+// Supported countries: Korea, Japan and English-speaking countries. Display names come from Intl.DisplayNames.
+export const COUNTRIES = ['KR', 'JP', 'US', 'GB', 'CA', 'AU', 'NZ', 'IE'];
+// First-visit default from the browser's language/region (ko -> KR, ja -> JP, en-GB -> GB ..., other English -> US).
+export function defaultCountry() {
+  const tags = (typeof navigator !== 'undefined' && (navigator.languages?.length ? navigator.languages : [navigator.language])) || [];
+  for (const raw of tags) {
+    const [lang, region] = String(raw || '').split('-');
+    if (region && COUNTRIES.includes(region.toUpperCase())) return region.toUpperCase();
+    if (lang === 'ko') return 'KR';
+    if (lang === 'ja') return 'JP';
+    if (lang === 'en') return 'US';
+  }
+  return 'US';
+}
 export const LANG_CODES = ['en', 'ko', 'ja'];
 // Display name of a streaming service: Korean name for ko, brand name otherwise.
 export const ottName = (o, lang) => lang === 'ko' ? o.name : o.en;
@@ -29,7 +42,7 @@ export function ottKey(name) {
   return OTTS.find(o => MATCH[o.key].some(m => n.includes(m)))?.key ?? null;
 }
 
-const DEF = { apiKey: '', rememberKey: true, country: 'KR', theme: 'auto', font: 'paper', size: 'm', lang: 'auto', myOtts: [], onboarded: false };
+const DEF = { apiKey: '', rememberKey: true, country: '', theme: 'auto', font: 'paper', size: 'm', lang: 'auto', myOtts: [], onboarded: false };
 const SESSION_KEY = 'ottpaper.session-key';
 const LEGACY_THEME = { light: 'ivory', dark: 'black' };
 
@@ -37,6 +50,7 @@ const LEGACY_THEME = { light: 'ivory', dark: 'black' };
 export function getSettings() {
   const raw = get('settings', {});
   const s = { ...DEF, ...raw };
+  if (!COUNTRIES.includes(s.country)) s.country = defaultCountry();   // unset, or a country that is no longer supported
   s.theme = LEGACY_THEME[s.theme] || (THEMES.includes(s.theme) ? s.theme : 'auto');
   if (!s.apiKey) { try { s.apiKey = sessionStorage.getItem(SESSION_KEY) || ''; } catch {} }
   // Users who saved a key before the welcome screen existed are treated as onboarded.
@@ -60,6 +74,7 @@ export function forgetApiKey() {
 const hist = (k, max) => ({
   list: () => get(k, []),
   add(v, same) { set(k, [v, ...get(k, []).filter(x => !same(x, v))].slice(0, max)); },
+  remove(same) { set(k, get(k, []).filter(x => !same(x))); },
   clear: () => set(k, []),
 });
 export const recentSearch = hist('rs', 10);

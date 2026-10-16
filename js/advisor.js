@@ -41,15 +41,19 @@ export function onMyServices(p, myKeys) {
   return [...keys];
 }
 
-// Worldwide table: every country TMDB knows, subscription providers first. results = TMDB `results` map (country code -> providers).
-export function worldwideRows(results) {
-  return Object.entries(results || {}).map(([code, p]) => ({
-    code,
-    flatrate: (p.flatrate || []).map(x => x.provider_name),
-    other: [...new Set([...(p.free || []), ...(p.ads || [])].map(x => x.provider_name))],
-    rentBuy: new Set([...(p.rent || []), ...(p.buy || [])].map(x => x.provider_name)).size,
-  })).filter(r => r.flatrate.length || r.other.length || r.rentBuy)
-    .sort((a, b) => b.flatrate.length - a.flatrate.length || a.code.localeCompare(b.code));
+// Availability table for the supported countries only. results = TMDB `results` map (country code -> providers); order = country codes
+// in display order (Korea, Japan, then English-speaking countries). Countries with no data are dropped.
+export function worldwideRows(results, order) {
+  const codes = order || Object.keys(results || {});
+  return codes.filter(code => results?.[code]).map(code => {
+    const p = results[code];
+    return {
+      code,
+      flatrate: (p.flatrate || []).map(x => x.provider_name),
+      other: [...new Set([...(p.free || []), ...(p.ads || [])].map(x => x.provider_name))],
+      rentBuy: new Set([...(p.rent || []), ...(p.buy || [])].map(x => x.provider_name)).size,
+    };
+  }).filter(r => r.flatrate.length || r.other.length || r.rentBuy);
 }
 
 // Today's lead story: deterministic per calendar day (same pick all day, new one tomorrow).
