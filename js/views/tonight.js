@@ -22,7 +22,7 @@ export function tonightView() {
     <div id="tnOut" aria-live="polite"></div>`;
   for (const k of ['type', 'mood', 'len']) document.querySelectorAll(`[data-${k}]`).forEach(b => b.onclick = () => {
     tn[k] = k === 'len' ? +b.dataset.len : b.dataset[k];
-    if (k === 'type') { tonightView(); return; }   // moods differ per type
+    if (k === 'type') { tonightView(); $('[data-type][aria-pressed=true]')?.focus(); return; }   // moods differ per type; keep the keyboard where it was
     document.querySelectorAll(`[data-${k}]`).forEach(x => x.setAttribute('aria-pressed', x === b));
   });
   $('#tnMine')?.addEventListener('change', e => { tn.mine = e.target.checked; });
@@ -63,5 +63,5 @@ function showTonight() {
         <p class="actions"><a class="btn primary" href="${href}">${esc(t('lead_open'))}</a><button class="btn" id="again">${I.sparkle()} ${t('tn_again')}</button></p>
       </div></article>
     ${sec(t('tn_more'))}${grid(tnList.filter(x => x.id !== pick.id).slice(0, 12))}`;
-  $('#again').onclick = showTonight;
+  $('#again').onclick = () => { showTonight(); $('#again')?.focus(); };
 }

@@ -370,6 +370,10 @@ ok(await page.locator('[data-mood=horror]').count() === 0 && await page.locator(
 ok(await page.locator('[data-len="0"]').getAttribute('aria-pressed') === 'true' && await page.locator('[data-len="90"]').count() === 0, 'tonight: switching type resets the film length (no stale 90-minute limit)');
 tnReqs.length = 0; await page.click('#spin'); await page.waitForSelector('#tnOut .lead-story h2 a');
 ok(tnReqs.length > 0 && tnReqs.every(u => !u.includes('with_runtime.lte')), 'tonight: no runtime limit sent after switching to TV');
+await page.focus('[data-type=movie]'); await page.keyboard.press('Enter');
+ok(await page.evaluate(() => document.activeElement?.dataset?.type) === 'movie', 'tonight: keyboard focus stays on the type chip after switching');
+await page.click('#spin'); await page.waitForSelector('#again'); await page.focus('#again'); await page.keyboard.press('Enter');
+ok(await page.evaluate(() => document.activeElement?.id) === 'again', 'tonight: keyboard focus stays on "another one" after it redraws');
 const setMine = async v => { await page.evaluate(v => { const st = JSON.parse(localStorage.getItem('settings')); st.myOtts = v; localStorage.setItem('settings', JSON.stringify(st)); }, v); await page.evaluate(() => { location.hash = '/news'; }); await page.waitForSelector('.wire-sec, #wire, .err'); await page.evaluate(() => { location.hash = '/tonight'; }); await page.waitForSelector('#spin'); };
 await setMine([]);
 ok(await page.locator('#tnMine').count() === 0, 'tonight: without services there is no "only my services" option');
