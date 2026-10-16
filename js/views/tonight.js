@@ -1,33 +1,37 @@
-// View: Tonight picker
+// View: Tonight picker — an evening feature: choose type / mood / length, we pick one from your services
 import * as T from '../tmdb.js';
 import { I } from '../icons.js';
 import { getSettings } from '../store.js';
 import { MOODS, resolveProviderIds, buildDiscoverParams, pickOne, LENGTHS } from '../tonight.js';
 import { t } from '../i18n.js';
-import { $, $app, esc, typeLabel, poster, grid, errView } from '../ui.js';
+import { $, $app, esc, typeLabel, poster, grid, errView, pageHead, empty, sec, stars, lede, clip, scriptCls, skStory, yearOfItem } from '../ui.js';
 
-// ---- Tonight: pick by type / mood / length, from my services ----
 const tn = { type: 'movie', mood: '', len: 0, mine: true };
 export function tonightView() {
   const s = getSettings(), hasMine = s.myOtts.length > 0;
   if (!hasMine) tn.mine = false;
   if (!MOODS[tn.type][tn.mood]) tn.mood = '';
-  const seg = (name, opts, cur) => `<div class="chips" role="radiogroup">${opts.map(([v, l]) => `<button data-${name}="${v}" aria-pressed="${String(cur) === String(v)}">${esc(l)}</button>`).join('')}</div>`;
-  $app.innerHTML = `<h1 class="page-h">${I.moon()} ${t('tn_title')}</h1><p class="note">${t('tn_sub')}</p>
-    <section class="panel"><h3>${t('tn_type')}</h3>${seg('type', [['movie', t('type_movie')], ['tv', t('type_tv')]], tn.type)}
-    <h3>${t('tn_mood')}</h3>${seg('mood', [['', t('tn_any')], ...Object.keys(MOODS[tn.type]).map(k => [k, t('m_' + k)])], tn.mood)}
-    <h3>${t('tn_length')}</h3>${seg('len', [[0, t('tn_any')], ...LENGTHS[tn.type].map(n => [n, t('tn_len', n)])], tn.len)}
-    ${hasMine ? `<label class="chip inline"><input type="checkbox" id="tnMine"${tn.mine ? ' checked' : ''}><span>${t('tn_mine')}</span></label>` : ''}
-    <p class="actions"><button class="btn primary" id="spin">${I.sparkle()} ${t('tn_spin')}</button></p></section>
+  const row = (label, name, opts, cur) => `<div class="row"><span class="lbl" id="lb-${name}">${label}</span><div class="chips" role="radiogroup" aria-labelledby="lb-${name}">${opts.map(([v, l]) => `<button data-${name}="${v}" aria-pressed="${String(cur) === String(v)}">${esc(l)}</button>`).join('')}</div></div>`;
+  $app.innerHTML = pageHead({ kicker: t('tn_kicker'), title: t('tn_title'), deck: t('tn_sub') }) +
+    `<section class="picker">
+      ${row(t('tn_type'), 'type', [['movie', t('type_movie')], ['tv', t('type_tv')]], tn.type)}
+      ${row(t('tn_mood'), 'mood', [['', t('tn_any')], ...Object.keys(MOODS[tn.type]).map(k => [k, t('m_' + k)])], tn.mood)}
+      ${row(t('tn_length'), 'len', [[0, t('tn_any')], ...LENGTHS[tn.type].map(n => [n, t('tn_len', n)])], tn.len)}
+      <div class="go">${hasMine ? `<label class="chip"><input type="checkbox" id="tnMine"${tn.mine ? ' checked' : ''}><span>${t('tn_mine')}</span></label>` : '<span></span>'}
+      <p class="actions"><button class="btn primary" id="spin">${I.moon()} ${t('tn_spin')}</button></p></div></section>
     <div id="tnOut" aria-live="polite"></div>`;
-  for (const k of ['type', 'mood', 'len']) document.querySelectorAll(`[data-${k}]`).forEach(b => b.onclick = () => { tn[k] = k === 'len' ? +b.dataset.len : b.dataset[k]; tonightView(); });
+  for (const k of ['type', 'mood', 'len']) document.querySelectorAll(`[data-${k}]`).forEach(b => b.onclick = () => {
+    tn[k] = k === 'len' ? +b.dataset.len : b.dataset[k];
+    if (k === 'type') { tonightView(); return; }   // moods differ per type
+    document.querySelectorAll(`[data-${k}]`).forEach(x => x.setAttribute('aria-pressed', x === b));
+  });
   $('#tnMine')?.addEventListener('change', e => { tn.mine = e.target.checked; });
   $('#spin').onclick = tonightSpin;
 }
 let tnList = [], tnSeen = new Set();
 async function tonightSpin() {
   const s = getSettings(), out = $('#tnOut');
-  out.innerHTML = `<p class="note">${t('loading')}</p>`;
+  out.innerHTML = skStory();
   try {
     let ids = [], noprov = false;
     if (tn.mine && s.myOtts.length) {
@@ -43,17 +47,19 @@ async function tonightSpin() {
 }
 function showTonight() {
   const out = $('#tnOut'), pick = pickOne(tnList, tnSeen);
-  if (!pick) { out.innerHTML = `<div class="err">${I.info()} ${t('tn_none')}</div>`; return; }
+  if (!pick) { out.innerHTML = empty(t('tn_none')); return; }
   tnSeen.add(pick.id);
-  const date = (pick.release_date || pick.first_air_date || '').slice(0, 4), over = (pick.overview || '').slice(0, 300);
-  out.innerHTML = `${out.dataset.noprov ? `<p class="note">${t('tn_noprov')}</p>` : ''}
-    <article class="lead-story"><a class="lp" href="#/title/${pick.media_type}/${Number(pick.id)}">${poster(pick.poster_path, 'w342')}</a>
-      <div><div class="kicker">${I.moon()} ${esc(t('tn_pick'))}</div>
-      <h2 class="lead-h"><a href="#/title/${pick.media_type}/${Number(pick.id)}">${esc(pick.title || pick.name)}</a></h2>
-      <p class="meta">${esc(typeLabel(pick.media_type))}${date ? ' · ' + esc(date) : ''}${pick.vote_average ? ' · ★ ' + pick.vote_average.toFixed(1) : ''}</p>
-      ${over ? `<p>${esc(over)}${over.length >= 300 ? '…' : ''}</p>` : ''}
-      <p class="actions"><button class="btn" id="again">${I.sparkle()} ${t('tn_again')}</button>
-      <a class="btn" href="#/title/${pick.media_type}/${Number(pick.id)}">${esc(t('lead_open'))}</a></p></div></article>
-    <h2 class="sec">${t('tn_more')}</h2>${grid(tnList.filter(x => x.id !== pick.id).slice(0, 12))}`;
+  const y = yearOfItem(pick), title = pick.title || pick.name, href = `#/title/${pick.media_type}/${Number(pick.id)}`;
+  out.innerHTML = `${out.dataset.noprov ? `<p class="ed-note">${t('tn_noprov')}</p>` : ''}
+    <article class="lead-story">
+      <div class="kicker">${esc(t('tn_pick'))}</div>
+      <h2 class="lead-h${scriptCls(title)}"><a href="${href}">${esc(title)}</a></h2>
+      <p class="byline">${esc(typeLabel(pick.media_type))}${y ? ' · ' + esc(y) : ''}${pick.vote_average ? ' · ' + stars(pick.vote_average) : ''}</p>
+      <div class="lead-body">
+        <figure class="lp"><a href="${href}" tabindex="-1" aria-hidden="true">${poster(pick.poster_path, 'w500')}</a><figcaption><span class="credit">${esc(t('photo_credit'))}</span></figcaption></figure>
+        ${pick.overview ? lede(clip(pick.overview, 420)) : ''}
+        <p class="actions"><a class="btn primary" href="${href}">${esc(t('lead_open'))}</a><button class="btn" id="again">${I.sparkle()} ${t('tn_again')}</button></p>
+      </div></article>
+    ${sec(t('tn_more'))}${grid(tnList.filter(x => x.id !== pick.id).slice(0, 12))}`;
   $('#again').onclick = showTonight;
 }

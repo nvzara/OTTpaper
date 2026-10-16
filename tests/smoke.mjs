@@ -47,7 +47,7 @@ ok(await page.locator('#toast.show').count() === 1, 'start without key is blocke
 await page.fill('#key', 'test-key');
 await page.click('label.chip:has(.ott[value=wavve])');
 await page.click('#start');
-await page.waitForSelector('.notice ~ .tabs');
+await page.waitForSelector('.front .notice[open]'); await page.waitForSelector('.listings .tabs');
 ok(true, 'start with key goes to home');
 ok((await page.locator('.notice').innerText()).includes('no revenue'), 'home shows non-commercial notice');
 await page.waitForSelector('.card');
@@ -57,10 +57,13 @@ await page.waitForSelector('.lead-story h2 a');
 ok((await page.locator('.lead-story h2 a').innerText()) === '<b>테스트</b>' && (await page.locator('.lead-story .kicker').innerText()).length > 0, "home: today's lead story renders (escaped)");
 ok((await page.locator('.lead-story .kicker').innerText()).toLowerCase().includes('services') || (await page.locator('.lead-story .kicker').innerText()).includes('서비스'), "lead: picked from titles on my services");
 
+ok((await page.locator('#edition').innerText()).length > 0 && (await page.locator('#dateline').innerText()).length > 0, 'masthead folio shows date and country edition');
+
 // 2. next visit -> straight to home (settings persisted)
 await page.reload();
 await page.waitForSelector('.card');
 ok(await page.locator('.welcome').count() === 0, 'second visit skips welcome');
+ok(await page.locator('.notice:not([open])').count() === 1 && (await page.locator('.notice summary').innerText()).length > 0, "publisher's note folds to one visible line after the first visit");
 
 // 3. tabs
 for (const t of ['movie', 'tv', 'upcoming', 'trending']) {
@@ -73,6 +76,8 @@ await page.click('.card');
 await page.waitForSelector('.pill');
 ok((await page.locator('.pill.mine').allInnerTexts()).join().includes('Wavve'), 'my OTT highlighted');
 ok((await page.locator('#prov .pill').first().innerText()).includes('Wavve'), 'my OTT sorted first');
+ok((await page.locator('.glance .pill').first().innerText()).includes('Wavve') && await page.locator('.glance .pill').count() === 2, 'title page: "streaming in" line under the headline lists subscription services, mine first');
+ok((await page.title()) === '테스트 — OTTpaper', 'title page sets the document title');
 await page.click('[data-k=rent]');
 ok(await page.locator('#prov .pill').count() === 1, 'type filter works');
 ok((await page.getAttribute('a:has-text("trailer")', 'href')) === 'https://www.youtube.com/watch?v=abcDEF12345' && (await page.getAttribute('a:has-text("trailer")', 'rel')).includes('noopener'), 'detail: trailer link (YouTube, opens safely)');
@@ -108,6 +113,7 @@ ok((await page.getAttribute('#q', 'list')) === 'qlist', 'search box linked to su
 // 6. settings: change + save, theme
 await page.click('#navSet'); await page.waitForSelector('#save');
 await page.selectOption('#country', 'US');
+ok(await page.evaluate(() => JSON.parse(localStorage.getItem('settings')).country) === 'US', 'settings: country is saved as soon as it changes');
 await page.click('.seg label:has(input[value=black])');
 ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'black', 'theme preview applies (black)');
 await page.click('.seg label:has(input[value=white])');
@@ -235,13 +241,13 @@ await page.click('[data-ns=all]');
 ok(await page.locator('.story').count() === 3, 'news: "All" restores stories');
 await page.unroute('**/news/news.*.json');
 await page.route('**/news/news.*.json', r => r.fulfill({ status: 404 }));
-await page.goto(base + '/#/news'); await page.reload(); await page.waitForSelector('.err');
+await page.goto(base + '/#/news'); await page.reload(); await page.waitForSelector('.empty');
 ok(true, 'missing news.json shows friendly message');
 
 
 // 14. clippings + "/" shortcut
 await page.route('**/news/news.*.json', r => r.fulfill({ status: 404 }));
-await page.goto(base + '/#/clippings'); await page.waitForSelector('.err');
+await page.goto(base + '/#/clippings'); await page.waitForSelector('.empty');
 ok(true, 'empty clippings shows hint');
 await page.goto(base + '/#/title/movie/1'); await page.waitForSelector('#clip');
 await page.click('#clip');

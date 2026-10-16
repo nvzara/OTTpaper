@@ -8,9 +8,10 @@ Keep en/ko/ja in sync; list new files under `js/`, `css/`, `fonts/` in `sw.js`.
 
 ## Implemented
 - Unified search with "on my services" badge/filter, decade + sort filters, recent-search suggestions
-- Title page laid out as a newspaper article: headline, deck, byline, photo + caption, fact sheet, where-to-watch by type, worldwide availability, trailer link, recommendations
+- Newspaper design system across all screens (masthead + folio line, section index, section heads, kickers/decks/bylines, review stars, editor's-note empty states, quiet loading blocks, colophon, print edition)
+- Title page laid out as a newspaper article: headline, deck, byline, "streaming in" line, photo + caption, fact sheet, where-to-watch listings by type, worldwide availability, trailer link, related titles
 - Country editions of the news wire (per-country files; local-language and worldwide sections)
-- Home front page: today's lead story, trending / popular / upcoming
+- Home front page: today's lead story, secondary stories, right rail (publisher's note, inside index, recently viewed, latest headlines), trending / popular / upcoming listings
 - Tonight picker (type, mood, length; filtered to my services)
 - Clippings (local watchlist) with subscription advisor and print edition
 - Welcome onboarding, settings (country, language, services, theme, font, size), validated backup/restore

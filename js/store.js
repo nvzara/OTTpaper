@@ -64,6 +64,8 @@ const hist = (k, max) => ({
 });
 export const recentSearch = hist('rs', 10);
 export const recentViews = hist('rv', 20);
+// The publisher's note is open on the first visit to the front page, then folded to one line.
+export const noticeSeen = { get: () => get('ns', false), set: () => set('ns', true) };
 
 // Clippings: titles the user saved (kept by "delete history", included in backups).
 const sameTitle = (a, b) => a.id === b.id && a.media_type === b.media_type;

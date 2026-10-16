@@ -27,12 +27,12 @@ on GitHub Pages.
 ## Project layout
 
 ```
-index.html           page shell (masthead, nav, footer, CSP)
-css/style.css        all styles (themes, fonts, newspaper layout, print)
+index.html           page shell (masthead with folio line, section index, colophon footer, CSP)
+css/style.css        all styles: colour tokens per theme, type, newspaper components, responsive layout, print
 sw.js, manifest.webmanifest, icons/   PWA: offline shell, install metadata, original app icon
 fonts/               bundled OFL fonts (Playfair Display, Source Serif 4) + license texts
 js/app.js            entry: page chrome text, router, service worker, shortcuts
-js/ui.js             shared helpers: DOM, escaping, toast, cards/grid, error view, theme
+js/ui.js             shared helpers: DOM, escaping, toast, theme, newspaper blocks (cards, section heads, stars, notes, loading)
 js/views/            one file per screen: home, search, detail, tonight, clippings, news, settings
 js/tmdb.js           TMDB API client + localStorage cache (the only place that builds API requests)
 js/store.js          settings, history, clippings, backup/restore (validated), OTT/country lists
@@ -56,12 +56,15 @@ After moving code between modules, run an `eslint` `no-undef`/`no-unused-vars` c
 - Languages: English / 한국어 / 日本語. Defaults to the browser language (English if unsupported); can be changed in Settings. Titles, overviews and cast info are requested from TMDB in the selected language (English overview as fallback). Translations may contain awkward expressions.
 - The Wire (News) by country edition: `news/news.<CC>.json` per country; local-language sources can be added per country in `news/feeds.json` (`editions`) once their terms are confirmed.
 - The Wire is built by a GitHub Action every 3 hours from public RSS feeds (headline, short excerpt and link only) and is empty locally until the first deployment. Open it at `#/news`.
-- Newspaper design: masthead, serif type, column layout, print stylesheet; dark mode is the night edition.
+- Newspaper design on every screen: masthead with ears and a folio line (volume/issue, date, country edition), section index with a slim sticky bar, section heads with double rules, kickers / headlines / decks / bylines, review-style stars, photos printed in grey until hover, editor's-note empty states, colophon footer and a print stylesheet; dark mode is the night edition.
+- Front page: today's lead with photo and lede, three secondary stories, a right rail (publisher's note — open on the first visit, then folded to one line — an "Inside" index, recently viewed titles, latest headlines from the Wire) and the listings tabs.
+- Title page as an article: a "streaming in" line under the headline answers where to watch first; then photo + fact sheet, the story with a drop cap (Latin text) and end mark, a where-to-watch listings box, worldwide table and related titles.
+- Settings as a printed form: country and services save as soon as they change; the API key is saved only with the Save button.
 - Clippings: save titles from the title page; stored locally, included in backups, kept when you delete history. Press `/` anywhere to jump to search.
 - Title pages: trailer link (opens YouTube in a new tab — no embeds, nothing loaded from YouTube until you click) and a "You may also like" row of TMDB recommendations.
 - Tonight (`#/tonight`): choose type, mood and length; OTTpaper asks TMDB for popular titles available on *your* services (TMDB's own provider filter) and picks one; "Another one" re-rolls.
 - Today's lead: a front-page story on Home, one pick per day from trending titles, preferring ones on your own services.
-- Accessibility: contrast of every theme is checked automatically (WCAG AA), keyboard skip link, labelled icon nav, reduced-motion support; friendly offline / rate-limit messages.
+- Accessibility: contrast of every theme is checked automatically (WCAG AA), keyboard skip link, labelled section links, selected options marked by underline or check (not colour alone), reduced-motion support; friendly offline / rate-limit messages.
 - Search suggestions from your own recent searches (browser datalist), "skip to content" link, and a print edition of your clippings (print stylesheet).
 - Search filters: decade and sort (relevance / newest / top rated) on top of the "on my services" filter; the Wire has per-service chips.
 - Search shows an "on my services" badge (and a filter) on results available via your own services; title pages include a worldwide availability table.

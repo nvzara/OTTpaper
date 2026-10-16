@@ -5,7 +5,7 @@ import { getSettings, recentSearch } from '../store.js';
 import { onMyServices } from '../advisor.js';
 import { DECADES, SORTS, filterSearch } from '../filters.js';
 import { t } from '../i18n.js';
-import { $, $app, esc, grid, errView } from '../ui.js';
+import { $, $app, esc, grid, errView, sec, pageHead, empty, skGrid } from '../ui.js';
 
 // Search suggestions: the browser's own <datalist> fed with this device's recent searches (nothing is sent anywhere).
 export function refreshSuggest() { $('#qlist').innerHTML = recentSearch.list().map(x => `<option value="${esc(x)}"></option>`).join(''); }
@@ -16,30 +16,34 @@ export async function searchView(q) {
   $('#q').value = q;
   if (!q) {
     const rs = recentSearch.list();
-    $app.innerHTML = `<h2 class="sec">${I.clock()} ${t('recent_searches')}</h2>` + (rs.length
-      ? `<div class="chips">${rs.map(s => `<a class="btn" href="#/search?q=${encodeURIComponent(s)}">${esc(s)}</a>`).join('')}</div>`
-      : `<p class="note">${t('no_history')}</p>`);
+    $app.innerHTML = pageHead({ kicker: t('nav_search'), title: t('recent_searches'), deck: t('search_hint') }) + (rs.length
+      ? `<div class="chips news-index">${rs.map(s => `<button data-q="${esc(s)}">${esc(s)}</button>`).join('')}</div>`
+      : empty(t('no_history')));
+    $app.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { location.hash = '/search?q=' + encodeURIComponent(b.dataset.q); });
     return;
   }
   recentSearch.add(q, (a, b) => a === b);
   refreshSuggest();
-  $app.innerHTML = `<h2 class="sec">${I.search()} ${esc(t('search_results', q))}</h2><div id="list"><p class="note">${t('searching')}</p></div>`;
+  $app.innerHTML = `${pageHead({ kicker: t('nav_search'), title: esc(t('search_results', q)), extra: '<p class="byline" id="count">&nbsp;</p>' })}<div id="list">${skGrid(12, t('searching'))}</div>`;
   try {
     const d = await T.search(q);
     const items = d.results.filter(x => x.media_type === 'movie' || x.media_type === 'tv');
     const mine = new Set(getSettings().myOtts);
     const st = { decade: 'any', sort: 'rel', onlyMine: false }, avail = new Set();   // avail: "type:id" keys on my services
-    const chips = (name, opts, cur) => `<div class="chips" role="radiogroup" aria-label="${esc(opts.label)}"><span class="chiplabel">${esc(opts.label)}</span>${opts.items.map(([v, l]) => `<button data-${name}="${v}" aria-pressed="${v === cur}">${esc(l)}</button>`).join('')}</div>`;
+    const chips = (name, opts, cur) => `<div class="chips" role="radiogroup" aria-label="${esc(opts.label)}"><span class="chiplabel" aria-hidden="true">${esc(opts.label)}</span>${opts.items.map(([v, l]) => `<button data-${name}="${v}" aria-pressed="${v === cur}">${esc(l)}</button>`).join('')}</div>`;
+    const by = (r, ty) => r.filter(x => x.media_type === ty);
+    $('#count').textContent = t('search_count', items.length, by(items, 'movie').length, by(items, 'tv').length);
+    if (!items.length) { $('#list').innerHTML = empty(t('search_none')); return; }
     const render = () => {
-      const r = filterSearch(items, st), by = ty => r.filter(x => x.media_type === ty);
-      $('#results').innerHTML = `<h2 class="sec">${I.film()} ${t('movies')}</h2>${grid(by('movie'))}<h2 class="sec">${I.tv()} ${t('tv')}</h2>${grid(by('tv'))}`;
+      const r = filterSearch(items, st), mv = by(r, 'movie'), tv = by(r, 'tv');
+      $('#results').innerHTML = (mv.length || !tv.length ? sec(t('movies'), mv.length) + grid(mv) : '') + (tv.length ? sec(t('tv'), tv.length) + grid(tv) : '');
       $('#results').classList.toggle('only-mine', st.onlyMine);
       for (const k of avail) decorate(k);
     };
     $('#list').innerHTML = `<div class="filters">
       ${chips('decade', { label: t('f_decade'), items: DECADES.map(k => [k, k === 'any' ? t('tn_any') : t('d_' + k)]) }, st.decade)}
       ${chips('sort', { label: t('f_sort'), items: SORTS.map(k => [k, t('sort_' + k)]) }, st.sort)}
-      ${mine.size ? `<div class="chips"><button id="onlyMine" aria-pressed="false">${I.check()} ${t('filter_mine')}</button></div><p class="note" id="availNote">${t('avail_checking')}</p>` : ''}</div>
+      ${mine.size ? `<button class="toggle" id="onlyMine" aria-pressed="false">${t('filter_mine')}</button><p class="note" id="availNote" role="status">${t('avail_checking')}</p>` : ''}</div>
       <div id="results"></div>`;
     for (const k of ['decade', 'sort']) document.querySelectorAll(`[data-${k}]`).forEach(b => b.onclick = () => {
       st[k] = b.dataset[k]; document.querySelectorAll(`[data-${k}]`).forEach(x => x.setAttribute('aria-pressed', x === b)); render();
