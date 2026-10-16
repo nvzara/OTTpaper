@@ -67,14 +67,22 @@ ok(true, 'all home tabs load');
 await page.click('.card');
 await page.waitForSelector('.pill');
 ok((await page.locator('.pill.mine').allInnerTexts()).join().includes('Wavve'), 'my OTT highlighted');
-ok((await page.locator('.pill').first().innerText()).includes('Wavve'), 'my OTT sorted first');
+ok((await page.locator('#prov .pill').first().innerText()).includes('Wavve'), 'my OTT sorted first');
 await page.click('[data-k=rent]');
-ok(await page.locator('.pill').count() === 1, 'type filter works');
+ok(await page.locator('#prov .pill').count() === 1, 'type filter works');
+ok(await page.locator('.ww').count() === 1 && await page.locator('.ww tr.cur').count() === 1, 'worldwide availability table lists the current country');
+
+// detail layout: poster placeholder must stay inside its column
+ok(await page.evaluate(() => { const n = document.querySelector('.detail .p'); return !n || n.getBoundingClientRect().width <= 260; }), 'detail poster column stays narrow');
 
 // 5. search
 await page.fill('#q', 'abc'); await page.press('#q', 'Enter');
 await page.waitForSelector('.card');
 ok(page.url().includes('#/search?q=abc'), 'search works');
+await page.waitForSelector('.card.on-mine .avail');
+ok((await page.locator('.avail').first().innerText()).length > 0, 'search: "on my services" badge appears');
+await page.click('#onlyMine');
+ok(await page.locator('#results.only-mine').count() === 1 && await page.locator('.card.on-mine').first().isVisible(), 'search: "my services only" filter keeps matching titles');
 
 // 6. settings: change + save, theme
 await page.click('#navSet'); await page.waitForSelector('#save');

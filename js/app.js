@@ -5,7 +5,7 @@ import {
   OTTS, COUNTRIES, ottKey, ottName, getSettings, saveSettings, recentSearch, recentViews,
   clippings, forgetApiKey, buildBackup, restoreBackup, clearUserData, requestPersistence,
 } from './store.js';
-import { computeCoverage } from './advisor.js';
+import { computeCoverage, onMyServices, worldwideRows } from './advisor.js';
 import { t, getLang, LANGS, countryName } from './i18n.js';
 
 const $app = document.getElementById('app');
@@ -44,7 +44,7 @@ function card(it) {
   const title = it.title || it.name || '';
   const date = (it.release_date || it.first_air_date || '').slice(0, 4);
   const score = it.vote_average ? `<span class="score">${I.star()}${it.vote_average.toFixed(1)}</span>` : '';
-  return `<a class="card" href="#/title/${type}/${Number(it.id)}"><div class="p">${poster(it.poster_path)}${score}</div>
+  return `<a class="card" data-k="${type}:${Number(it.id)}" href="#/title/${type}/${Number(it.id)}"><div class="p">${poster(it.poster_path)}${score}</div>
     <div class="t">${esc(title)}</div><div class="s">${typeLabel(type)}${date ? ' · ' + esc(date) : ''}</div></a>`;
 }
 const grid = (items, type) => {
@@ -179,8 +179,32 @@ async function searchView(q) {
     const d = await T.search(q);
     const r = d.results.filter(x => x.media_type === 'movie' || x.media_type === 'tv');
     const by = ty => r.filter(x => x.media_type === ty);
-    $('#list').innerHTML = `<h2 class="sec">${I.film()} ${t('movies')}</h2>${grid(by('movie'))}<h2 class="sec">${I.tv()} ${t('tv')}</h2>${grid(by('tv'))}`;
+    const mine = new Set(getSettings().myOtts);
+    $('#list').innerHTML = (mine.size ? `<div class="chips"><button id="onlyMine" aria-pressed="false">${I.check()} ${t('filter_mine')}</button></div><p class="note" id="availNote">${t('avail_checking')}</p>` : '') +
+      `<div id="results"><h2 class="sec">${I.film()} ${t('movies')}</h2>${grid(by('movie'))}<h2 class="sec">${I.tv()} ${t('tv')}</h2>${grid(by('tv'))}</div>`;
+    if (mine.size) markAvailability(r.slice(0, 24), mine);
   } catch (e) { $('#list').innerHTML = errView(e); }
+}
+
+// Badge search results that are on one of MY services (runs in the background; provider data is cached 3 days).
+async function markAvailability(items, mine) {
+  const country = getSettings().country;
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const it = items[next++];
+      try {
+        const pv = await T.providers(it.media_type, it.id);
+        if (!onMyServices(pv.results?.[country], mine).length) continue;
+        const el = $(`.card[data-k="${it.media_type}:${Number(it.id)}"]`);
+        if (el) { el.classList.add('on-mine'); el.querySelector('.p')?.insertAdjacentHTML('beforeend', `<span class="avail">${I.check()} ${t('badge_mine')}</span>`); }
+      } catch (e) { if (e.message === 'NO_KEY' || e.message === 'BAD_KEY') return; }
+    }
+  };
+  const btn = $('#onlyMine');
+  if (btn) btn.onclick = () => { const on = btn.getAttribute('aria-pressed') !== 'true'; btn.setAttribute('aria-pressed', on); $('#results')?.classList.toggle('only-mine', on); };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  $('#availNote')?.remove();
 }
 
 // ---- Detail ----
@@ -207,6 +231,17 @@ function provHtml(p, s) {
   }).join('');
   return (sections || `<p class="note">${t('no_prov_kind')}</p>`) +
     (p.link ? `<p class="note"><a href="${esc(p.link)}" target="_blank" rel="noopener noreferrer">${t('tmdb_page')} ${I.external()}</a> ${t('jw_credit')}</p>` : '');
+}
+function worldwideHtml(results) {
+  const rows = worldwideRows(results);
+  if (!rows.length) return '';
+  const mine = new Set(getSettings().myOtts), cur = getSettings().country;
+  return `<details class="ww"><summary>${I.globe()} ${esc(t('ww_title'))} · ${esc(t('ww_sub', rows.length))}</summary>
+    <table><tbody>${rows.map(r => `<tr${r.code === cur ? ' class="cur"' : ''}><th scope="row">${esc(countryName(r.code))}</th>
+      <td>${r.flatrate.map(n => `<span class="pill${mine.has(ottKey(n)) ? ' mine' : ''}">${esc(n)}</span>`).join('')}
+      ${r.other.length ? `<span class="note">${esc(t('ww_other'))}: ${esc(r.other.join(', '))}</span>` : ''}
+      ${!r.flatrate.length && !r.other.length ? `<span class="note">${esc(t('ww_rentbuy'))}</span>` : ''}</td></tr>`).join('')}</tbody></table>
+    <p class="note">${esc(t('ww_note'))}</p></details>`;
 }
 async function detailView(type, id) {
   if (type !== 'movie' && type !== 'tv' || !/^\d+$/.test(id)) { $app.innerHTML = `<p>${t('bad_url')}</p>`; return; }
@@ -238,6 +273,7 @@ async function detailView(type, id) {
         `<button data-k="${k}" aria-pressed="${k === kindFilter}">${t('k_' + k)}</button>`).join('')}</div>
       <div class="prov" id="prov">${provHtml(pr, s)}</div>
       <p class="note">${I.check()} ${t('mine_note')}</p>
+      ${worldwideHtml(pv.results)}
       </div></div>`;
     const paintClip = () => { const on = clippings.has(clip); $('#clip').innerHTML = I.bookmark(on) + ' ' + t(on ? 'clip_saved' : 'clip_add'); $('#clip').setAttribute('aria-pressed', on); };
     paintClip();

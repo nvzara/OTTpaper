@@ -14,8 +14,8 @@
 ## Ideas (pick the most valuable next; reorder freely)
 1. ~~Clippings~~ (done)
 2. ~~Best subscription for my clippings~~ (done: Subscription advisor)
-3. **Search upgrades** — filter by "on my services", type, year; suggestions; keyboard shortcut `/`; voice search (Web Speech API).
-4. **Worldwide availability** — table of every country for a title (travel/VPN-free overview).
+3. **Search upgrades** — done: "on my services" badge + filter, `/` shortcut. Left: year/type filters, suggestions, voice search (Web Speech API; CSP/permissions check first).
+4. ~~Worldwide availability~~ (done)
 5. **Today's front page** — deterministic daily lead story + "what to watch tonight" picker by mood/length.
 6. **PWA** — manifest + service worker for offline front page and install.
 7. **Print edition** — print stylesheet polish ("print my clippings").
@@ -25,6 +25,7 @@
 
 ## Iteration log
 - v1: newspaper theme, masthead, The Wire, attribution doc, roadmap.
+- v5: search results badged/filterable by my services; worldwide availability table on title pages; fixed poster-placeholder overflow.
 - v4: subscription advisor (js/advisor.js + clippings page), deploys 1-9 all green incl. CSP/fonts.
 - v3: themes + fonts + key security (tests/security.mjs guards CSP, secrets, fonts licenses).
 - v2: clippings page + backup/restore, `/` search shortcut; news feeds verified in Actions (more feeds / keyword tuning possible: only 12 items pass the OTT filter).

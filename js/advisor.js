@@ -32,3 +32,22 @@ export function computeCoverage(clips, pvByClip, myKeys) {
   const withData = clips.length - noData.length;
   return { total: clips.length, withData, covered: covered.size, ranking, best, noSub, noData };
 }
+
+// Which of MY services offer this title in the chosen country (subscription, free or ad-supported). p = TMDB provider object for that country.
+export function onMyServices(p, myKeys) {
+  if (!p || !myKeys.size) return [];
+  const keys = new Set();
+  for (const kind of ['flatrate', 'free', 'ads']) for (const x of p[kind] || []) { const k = ottKey(x.provider_name); if (k && myKeys.has(k)) keys.add(k); }
+  return [...keys];
+}
+
+// Worldwide table: every country TMDB knows, subscription providers first. results = TMDB `results` map (country code -> providers).
+export function worldwideRows(results) {
+  return Object.entries(results || {}).map(([code, p]) => ({
+    code,
+    flatrate: (p.flatrate || []).map(x => x.provider_name),
+    other: [...new Set([...(p.free || []), ...(p.ads || [])].map(x => x.provider_name))],
+    rentBuy: new Set([...(p.rent || []), ...(p.buy || [])].map(x => x.provider_name)).size,
+  })).filter(r => r.flatrate.length || r.other.length || r.rentBuy)
+    .sort((a, b) => b.flatrate.length - a.flatrate.length || a.code.localeCompare(b.code));
+}
