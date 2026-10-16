@@ -261,6 +261,20 @@ await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('settings'
 await page.reload(); await page.waitForSelector('.card');
 ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'black', 'legacy "dark" theme migrates to black');
 
+
+// 16. subscription advisor on clippings
+await page.evaluate(() => {
+  const st = JSON.parse(localStorage.getItem('settings')); st.country = 'KR'; st.myOtts = ['wavve']; st.lang = 'en'; localStorage.setItem('settings', JSON.stringify(st));
+  localStorage.setItem('cl', JSON.stringify([1, 2].map(id => ({ id, media_type: 'movie', title: 'Clip ' + id, poster_path: null, release_date: '2020-01-01' }))));
+});
+await page.goto(base + '/#/clippings'); await page.reload(); await page.waitForSelector('#adv');
+await page.click('#adv'); await page.waitForSelector('.advisor');
+const adv = await page.locator('.advisor').innerText();
+ok(adv.includes('cover 2 of 2'), 'advisor: my service covers 2 of 2 clipped titles');
+ok(await page.locator('.rank li').count() >= 2 && await page.locator('.rank li.mine').count() === 1, 'advisor: ranking with my service highlighted');
+ok(adv.includes('Best one to add: Netflix') || adv.includes('Nothing else'), 'advisor: add-on suggestion shown');
+ok(adv.includes('JustWatch'), 'advisor: JustWatch credited');
+
 ok(errors.length === 0, 'no JS errors' + (errors.length ? ': ' + errors.join('; ') : ''));
 await browser.close(); server.close();
 process.exit(fails ? 1 : 0);

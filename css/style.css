@@ -127,3 +127,10 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 .ic.filled{fill:currentColor}
 .btn[aria-pressed=true]{background:var(--ink);color:var(--paper)}
 .keyrow{display:flex;gap:8px}.keyrow input{flex:1}.note.preview{font-family:var(--hf);font-size:1.15em;font-style:italic;margin-top:10px}
+/* Subscription advisor */
+.rank{list-style:none;margin:8px 0;padding:0}
+.rank li{display:grid;grid-template-columns:minmax(120px,200px) 1fr auto;gap:4px 12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--hair)}
+.rank li.mine .rname{color:var(--ok);font-weight:700}
+.rank progress{width:100%;height:10px;accent-color:var(--ink)}.rank li.mine progress{accent-color:var(--ok)}
+.rank .rcount{font:600 13px var(--sans);color:var(--mut)}
+.rank details{grid-column:1/-1;font:13px var(--sans)}.rank summary{cursor:pointer;color:var(--mut)}.rtitles{padding:6px 0 0}
