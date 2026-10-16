@@ -44,6 +44,19 @@ const hist = (k, max) => ({
 export const recentSearch = hist('rs', 10);
 export const recentViews = hist('rv', 20);
 
+// Clippings: titles the user saved (kept by "delete history", included in backups).
+const sameTitle = (a, b) => a.id === b.id && a.media_type === b.media_type;
+export const clippings = {
+  list: () => get('cl', []),
+  has: v => get('cl', []).some(x => sameTitle(x, v)),
+  toggle(v) {
+    const l = get('cl', []);
+    const has = l.some(x => sameTitle(x, v));
+    set('cl', has ? l.filter(x => !sameTitle(x, v)) : [v, ...l].slice(0, 300));
+    return !has;
+  },
+};
+
 // Ask the browser not to evict our data under storage pressure (best effort).
 export async function requestPersistence() {
   try { return await navigator.storage?.persist?.(); } catch { return false; }
@@ -55,7 +68,7 @@ export function buildBackup({ includeKey }) {
   if (!includeKey) s.apiKey = '';
   return {
     app: 'OTTpaper', version: 1, exportedAt: new Date().toISOString(), includesApiKey: !!(includeKey && s.apiKey),
-    settings: s, recentSearch: recentSearch.list(), recentViews: recentViews.list(),
+    settings: s, recentSearch: recentSearch.list(), recentViews: recentViews.list(), clippings: clippings.list(),
   };
 }
 
@@ -81,11 +94,14 @@ export function restoreBackup(raw) {
     release_date: str(v.release_date, 10), first_air_date: str(v.first_air_date, 10),
   } : null;
   if (Array.isArray(raw.recentSearch)) set('rs', raw.recentSearch.map(x => str(x, 100)).filter(Boolean).slice(0, 10));
+  if (Array.isArray(raw.clippings)) set('cl', raw.clippings.map(cleanView).filter(Boolean).slice(0, 300));
   if (Array.isArray(raw.recentViews)) set('rv', raw.recentViews.map(cleanView).filter(Boolean).slice(0, 20));
 }
 
 export function clearUserData() {
   const keep = localStorage.getItem('settings');
-  Object.keys(localStorage).filter(k => k !== 'settings').forEach(k => localStorage.removeItem(k));
+  const clips = localStorage.getItem('cl');
+  Object.keys(localStorage).forEach(k => localStorage.removeItem(k));
   if (keep) localStorage.setItem('settings', keep);
+  if (clips) localStorage.setItem('cl', clips);
 }

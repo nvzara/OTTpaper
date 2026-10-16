@@ -3,7 +3,7 @@ import { IMG } from './tmdb.js';
 import { I } from './icons.js';
 import {
   OTTS, COUNTRIES, ottKey, ottName, getSettings, saveSettings, recentSearch, recentViews,
-  buildBackup, restoreBackup, clearUserData, requestPersistence,
+  clippings, buildBackup, restoreBackup, clearUserData, requestPersistence,
 } from './store.js';
 import { t, getLang, LANGS, countryName } from './i18n.js';
 
@@ -202,8 +202,10 @@ async function detailView(type, id) {
     const meta = [typeLabel(type), (d.release_date || d.first_air_date || '').slice(0, 4), cert, run ? t('min', run) : '',
       type === 'tv' ? t('seasons', d.number_of_seasons, d.number_of_episodes) : '', d.status].filter(Boolean).map(esc).join(' · ');
     const pr = pv.results?.[s.country];
+    const clip = { id: d.id, media_type: type, title, poster_path: d.poster_path, release_date: d.release_date, first_air_date: d.first_air_date };
     $app.innerHTML = `<div class="detail"><div class="p">${poster(d.poster_path, 'w500')}</div><div>
       <h1>${esc(title)}</h1>
+      <p class="actions"><button class="btn" id="clip"></button></p>
       <div class="meta">${d.vote_average ? `<span class="score inline">${I.star()}${d.vote_average.toFixed(1)}</span> ` : ''}${meta}</div>
       <p class="meta">${esc((d.genres || []).map(g => g.name).join(', '))}</p>
       <p>${esc(d.overview) || `<span class="note">${t('no_overview')}</span>`}</p>
@@ -214,12 +216,22 @@ async function detailView(type, id) {
       <div class="prov" id="prov">${provHtml(pr, s)}</div>
       <p class="note">${I.check()} ${t('mine_note')}</p>
       </div></div>`;
+    const paintClip = () => { const on = clippings.has(clip); $('#clip').innerHTML = I.bookmark(on) + ' ' + t(on ? 'clip_saved' : 'clip_add'); $('#clip').setAttribute('aria-pressed', on); };
+    paintClip();
+    $('#clip').onclick = () => { toast(t(clippings.toggle(clip) ? 'clip_added' : 'clip_removed')); paintClip(); };
     document.querySelectorAll('#kf [data-k]').forEach(b => b.onclick = () => {
       kindFilter = b.dataset.k;
       document.querySelectorAll('#kf [data-k]').forEach(x => x.setAttribute('aria-pressed', x === b));
       $('#prov').innerHTML = provHtml(pr, s);
     });
   } catch (e) { $app.innerHTML = errView(e); }
+}
+
+// ---- Clippings ----
+function clippingsView() {
+  const l = clippings.list();
+  $app.innerHTML = `<h1 class="page-h">${I.bookmark()} ${t('clips_title')}</h1><p class="note">${t('clips_sub')}</p>` +
+    (l.length ? grid(l) : `<div class="err">${I.info()} ${t('clips_empty')}</div>`);
 }
 
 // ---- News wire (news.json is generated at deploy time by scripts/fetch-news.mjs) ----
@@ -297,6 +309,7 @@ function applyLang() {
   document.title = t('page_title');
   $('#q').placeholder = t('search_ph');
   $('#navHome').innerHTML = I.home() + `<span>${t('nav_home')}</span>`;
+  $('#navClips').innerHTML = I.bookmark() + `<span>${t('nav_clips')}</span>`;
   $('#navNews').innerHTML = I.news() + `<span>${t('nav_news')}</span>`;
   $('#navSet').innerHTML = I.settings() + `<span>${t('nav_settings')}</span>`;
   $('#dateline').textContent = fmtDate(Date.now(), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -317,6 +330,7 @@ function route() {
   else if (parts[0] === 'welcome' || first) welcomeView();
   else if (parts[0] === 'search') searchView(new URLSearchParams(qs).get('q'));
   else if (parts[0] === 'news') newsView();
+  else if (parts[0] === 'clippings') clippingsView();
   else if (parts[0] === 'title') detailView(parts[1], parts[2]);
   else home();
 }
@@ -328,5 +342,9 @@ $('#searchForm').onsubmit = e => {
 $('#searchForm').insertAdjacentHTML('afterbegin', `<span class="si">${I.search()}</span>`);
 applyTheme();
 applyLang();
+// "/" focuses the search box (like many newspaper-style sites and dev tools)
+addEventListener('keydown', e => {
+  if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) { e.preventDefault(); $('#q').focus(); }
+});
 addEventListener('hashchange', route);
 route();

@@ -51,6 +51,7 @@ tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 - Languages: English / 한국어 / 日本語. Defaults to the browser language (English if unsupported); can be changed in Settings. Titles, overviews and cast info are requested from TMDB in the selected language (English overview as fallback). Translations may contain awkward expressions.
 - The Wire (News): a GitHub Action fetches public RSS feeds every 3 hours at build time and publishes `news/news.json` (headline, short excerpt and link only). Open it at `#/news`. It is empty locally and until the first deployment.
 - Newspaper design: masthead, serif type, column layout, print stylesheet; dark mode is the night edition.
+- Clippings: save titles from the title page; stored locally, included in backups, kept when you delete history. Press `/` anywhere to jump to search.
 - Backup/restore: download all settings (optionally including the API key) as one JSON file and restore it later.
 
 ## Tests

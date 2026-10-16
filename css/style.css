@@ -109,3 +109,5 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 }
 @media print{.bar,#toast,.tabs,.nav{display:none}body{background:#fff;color:#000}.card img{filter:grayscale(1)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.ic.filled{fill:currentColor}
+.btn[aria-pressed=true]{background:var(--ink);color:var(--paper)}

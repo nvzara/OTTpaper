@@ -7,10 +7,11 @@
 ## Done
 - [x] Search, detail with where-to-watch (per type, my OTT first), tabs, history
 - [x] Welcome onboarding, settings, backup/restore, en/ko/ja, content language
-- [x] Newspaper look + masthead; The Wire (news via scheduled GitHub Action → news.json)
+- [x] Newspaper look + masthead; The Wire (news via scheduled GitHub Action → news.json) — verified live: 4 feeds ok, 12 items
+- [x] Clippings (local watchlist, in backups, kept by 'delete history') + `/` focuses search
 
 ## Ideas (pick the most valuable next; reorder freely)
-1. **Clippings (watchlist)** — save titles locally, included in backup.
+1. ~~Clippings~~ (done)
 2. **Best subscription for my clippings** — which of my services (or which one to add) covers the most saved titles (uses cached provider data).
 3. **Search upgrades** — filter by "on my services", type, year; suggestions; keyboard shortcut `/`; voice search (Web Speech API).
 4. **Worldwide availability** — table of every country for a title (travel/VPN-free overview).
@@ -22,4 +23,5 @@
 10. Accessibility pass (contrast, focus, screen-reader labels), performance pass (image sizes, lazy loading).
 
 ## Iteration log
-- v1 (this commit): newspaper theme, masthead, The Wire, attribution doc, roadmap.
+- v1: newspaper theme, masthead, The Wire, attribution doc, roadmap.
+- v2: clippings page + backup/restore, `/` search shortcut; news feeds verified in Actions (more feeds / keyword tuning possible: only 12 items pass the OTT filter).

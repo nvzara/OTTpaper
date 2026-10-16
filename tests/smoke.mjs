@@ -191,6 +191,29 @@ await page.route('**/news/news.json', r => r.fulfill({ status: 404 }));
 await page.goto(base + '/#/news'); await page.reload(); await page.waitForSelector('.err');
 ok(true, 'missing news.json shows friendly message');
 
+
+// 14. clippings + "/" shortcut
+await page.route('**/news/news.json', r => r.fulfill({ status: 404 }));
+await page.goto(base + '/#/clippings'); await page.waitForSelector('.err');
+ok(true, 'empty clippings shows hint');
+await page.goto(base + '/#/title/movie/1'); await page.waitForSelector('#clip');
+await page.click('#clip');
+ok(await page.locator('#clip').getAttribute('aria-pressed') === 'true', 'clip button toggles on');
+await page.goto(base + '/#/clippings'); await page.waitForSelector('.card');
+ok(await page.locator('.card').count() === 1, 'clipped title listed');
+await page.goto(base + '/#/settings'); await page.waitForSelector('#exp');
+const [dl3] = await Promise.all([page.waitForEvent('download'), page.click('#exp')]);
+ok(JSON.parse(await readFile(await dl3.path(), 'utf8')).clippings.length === 1, 'backup includes clippings');
+await page.click('#clr');
+ok(await page.evaluate(() => JSON.parse(localStorage.getItem('cl') || '[]').length) === 1, 'delete history keeps clippings');
+await page.evaluate(() => localStorage.removeItem('cl'));
+await page.setInputFiles('#file', await dl3.path());
+await page.waitForFunction(() => JSON.parse(localStorage.getItem('cl') || '[]').length === 1);
+ok(true, 'restore brings clippings back');
+await page.goto(base + '/#/'); await page.waitForSelector('.card');
+await page.keyboard.press('/');
+ok(await page.evaluate(() => document.activeElement.id) === 'q', '"/" focuses search');
+
 ok(errors.length === 0, 'no JS errors' + (errors.length ? ': ' + errors.join('; ') : ''));
 await browser.close(); server.close();
 process.exit(fails ? 1 : 0);
