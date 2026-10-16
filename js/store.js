@@ -89,13 +89,17 @@ const hist = (k, max, clean) => {
     clear: () => set(k, []),
   };
 };
-export const recentSearch = hist('rs', 10, cleanQuery);
+const sameQuery = (a, b) => a.toLowerCase() === b.toLowerCase();
+const sameTitle = (a, b) => a.id === b.id && a.media_type === b.media_type;
+const uniq = (a, same) => a.filter((x, i) => a.findIndex(y => same(x, y)) === i);
+const rsBase = hist('rs', 10, cleanQuery);
+// "Dune" and "dune " are the same search: one entry, the latest spelling.
+export const recentSearch = { ...rsBase, add: q => { const c = cleanQuery(q); if (c) rsBase.add(c.trim(), sameQuery); } };
 export const recentViews = hist('rv', 20, cleanTitle);
 // The publisher's note is open on the first visit to the front page, then folded to one line.
 export const noticeSeen = { get: () => get('ns', false), set: () => set('ns', true) };
 
 // Clippings: titles the user saved (kept by "delete history", included in backups).
-const sameTitle = (a, b) => a.id === b.id && a.media_type === b.media_type;
 const clipList = () => { const a = get('cl', []); return Array.isArray(a) ? a.map(cleanTitle).filter(Boolean) : []; };
 export const clippings = {
   list: clipList,
@@ -140,10 +144,10 @@ export function restoreBackup(raw) {
     myOtts: Array.isArray(s.myOtts) ? s.myOtts.filter(k => OTTS.some(o => o.key === k)) : cur.myOtts,
     onboarded: true,
   });
-  const cleanView = cleanTitle;
-  if (Array.isArray(raw.recentSearch)) set('rs', raw.recentSearch.map(x => str(x, 100)).filter(Boolean).slice(0, 10));
-  if (Array.isArray(raw.clippings)) set('cl', raw.clippings.map(cleanView).filter(Boolean).slice(0, 300));
-  if (Array.isArray(raw.recentViews)) set('rv', raw.recentViews.map(cleanView).filter(Boolean).slice(0, 20));
+  // Lists from a file are cleaned like stored ones: malformed entries dropped, duplicates merged, size limits applied.
+  if (Array.isArray(raw.recentSearch)) set('rs', uniq(raw.recentSearch.map(cleanQuery).filter(Boolean).map(x => x.trim()).filter(Boolean), sameQuery).slice(0, 10));
+  if (Array.isArray(raw.clippings)) set('cl', uniq(raw.clippings.map(cleanTitle).filter(Boolean), sameTitle).slice(0, 300));
+  if (Array.isArray(raw.recentViews)) set('rv', uniq(raw.recentViews.map(cleanTitle).filter(Boolean), sameTitle).slice(0, 20));
 }
 
 export function clearUserData() {

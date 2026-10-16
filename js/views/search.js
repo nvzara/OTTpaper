@@ -21,7 +21,7 @@ export async function searchView(q) {
     $app.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { location.hash = '/search?q=' + encodeURIComponent(b.dataset.q); });
     return;
   }
-  recentSearch.add(q, (a, b) => a === b);
+  recentSearch.add(q);
   refreshSuggest();
   $app.innerHTML = `${pageHead({ kicker: t('nav_search'), title: esc(t('search_results', q)), long: q.length > 16, extra: '<p class="byline" id="count">&nbsp;</p>' })}<div id="list">${skGrid(12, t('searching'))}</div>`;
   try {

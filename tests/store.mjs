@@ -4,7 +4,7 @@ globalThis.localStorage = { getItem: k => mem[k] ?? null, setItem: (k, v) => { m
 globalThis.sessionStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const setLang = (...l) => Object.defineProperty(globalThis, 'navigator', { value: { languages: l, language: l[0] }, configurable: true });
 setLang('en-US');
-const { COUNTRIES, defaultCountry, getSettings, recentSearch, recentViews, clippings } = await import('../js/store.js');
+const { COUNTRIES, defaultCountry, getSettings, recentSearch, recentViews, clippings, restoreBackup, buildBackup } = await import('../js/store.js');
 let bad = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) bad++; };
 ok(COUNTRIES.join() === 'KR,JP,US,GB,CA,AU,NZ,IE', 'supported countries: Korea, Japan, English-speaking');
@@ -17,7 +17,7 @@ mem.settings = JSON.stringify({ country: 'DE' });
 ok(getSettings().country === 'KR', 'a stored unsupported country (DE) is replaced by the default');
 mem.settings = JSON.stringify({ country: 'JP' });
 ok(getSettings().country === 'JP', 'a stored supported country is kept');
-recentSearch.add('a', (x, y) => x === y); recentSearch.add('b', (x, y) => x === y); recentSearch.add('a', (x, y) => x === y);
+recentSearch.add('a'); recentSearch.add('b'); recentSearch.add('a');
 ok(recentSearch.list().join() === 'a,b', 'recent searches: newest first, no duplicates');
 recentSearch.remove(x => x === 'a');
 ok(recentSearch.list().join() === 'b', 'recent searches: remove one');
@@ -32,4 +32,25 @@ ok(clippings.toggle({ id: 9, media_type: 'tv', title: 'N', poster_path: '/<scrip
 ok(clippings.toggle({ id: 9, media_type: 'tv' }) === false && clippings.list().length === 0, 'clippings: toggle removes it again');
 mem.rv = JSON.stringify([null, 3, { id: 1 }, { id: 2, media_type: 'tv' }]); ok(recentViews.list().length === 1, 'recent views: malformed entries are dropped');
 mem.rs = JSON.stringify(['ok', '', 5, null, '   ', 'x'.repeat(300)]); ok(recentSearch.list().length === 2 && recentSearch.list()[1].length === 100, 'recent searches: non-strings/empty dropped, long entries cut to 100');
+// recent searches: case/spacing duplicates merge, newest spelling wins, at most 10 kept
+recentSearch.clear(); recentSearch.add('Dune'); recentSearch.add('  dune '); recentSearch.add('   ');
+ok(recentSearch.list().join('|') === 'dune', 'recent searches: "Dune" and "dune " are one entry (latest spelling); blank ignored');
+for (let i = 0; i < 15; i++) recentSearch.add('q' + i);
+ok(recentSearch.list().length === 10 && recentSearch.list()[0] === 'q14', 'recent searches: newest 10 kept');
+// clippings: capped at 300 (newest first)
+mem.cl = '[]'; for (let i = 1; i <= 305; i++) clippings.toggle({ id: i, media_type: 'movie', title: 'T' + i });
+ok(clippings.list().length === 300 && clippings.list()[0].id === 305, 'clippings: newest 300 kept');
+// restoring backups: old/partial files and duplicates
+const tv = (id, title) => ({ id, media_type: 'tv', title });
+restoreBackup({ app: 'OTTpaper', settings: { country: 'JP', unknownField: 1, myOtts: ['netflix', 'nope'] },
+  recentSearch: ['Dune', 'dune', 'Alien', 5, ''], clippings: [tv(1, 'A'), tv(1, 'A again'), tv(2, 'B'), { id: 3, media_type: 'movie' }, null], recentViews: [tv(7, 'V'), tv(7, 'V')] });
+ok(getSettings().country === 'JP' && getSettings().myOtts.join() === 'netflix', 'restore: old backup with unknown fields keeps only known ones');
+ok(recentSearch.list().join() === 'Dune,Alien', 'restore: recent searches deduped (case-insensitive) and cleaned');
+ok(clippings.list().map(c => c.id).join() === '1,2,3' && clippings.list()[0].title === 'A', 'restore: duplicate clippings merged, malformed dropped');
+ok(recentViews.list().length === 1, 'restore: duplicate recent views merged');
+restoreBackup({ app: 'OTTpaper', settings: {} });
+ok(clippings.list().length === 3 && getSettings().country === 'JP', 'restore: a backup without lists/fields leaves existing data alone');
+ok(!('apiKey' in buildBackup({ includeKey: false }).settings) || buildBackup({ includeKey: false }).settings.apiKey === '', 'backup without key has no key');
+let threw = false; try { restoreBackup({ app: 'Other', settings: {} }); } catch { threw = true; }
+ok(threw, 'restore: a file that is not an OTTpaper backup is refused');
 process.exit(bad ? 1 : 0);
