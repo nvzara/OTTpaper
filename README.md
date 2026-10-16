@@ -23,3 +23,30 @@ on GitHub Pages.
 ## 출처
 - This product uses the TMDB API but is not endorsed or certified by TMDB.
 - 시청 제공 정보: JustWatch (TMDB watch providers 경유).
+
+## Project layout
+
+```
+index.html        page shell (header, footer with attributions)
+css/style.css     all styles (light/dark themes via CSS variables)
+js/app.js         router + views (welcome, home, search, detail, settings)
+js/tmdb.js        TMDB API client + localStorage cache
+js/store.js       settings, history, backup/restore (validated), OTT/country lists
+js/icons.js       original inline SVG icons (no third-party icon set)
+docs/PLAN.md      development plan
+tests/smoke.mjs   browser smoke test with a mocked TMDB API
+```
+
+## Features
+
+- First visit: welcome screen guides you through entering your own TMDB key, country and your OTT services; later visits open the main screen directly.
+- Settings can be changed anytime; everything is stored in your browser only.
+- Backup/restore: download all settings (optionally including the API key) as one JSON file and restore it later.
+
+## Tests
+
+Run before every push: `NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
+
+## License
+
+Code: MIT (see LICENSE). TMDB data, JustWatch availability data, posters and streaming-service names belong to their respective owners and are not covered by this license.
