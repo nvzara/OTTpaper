@@ -22,6 +22,7 @@ ok(/script-src 'self'(;|$)/.test(csp) && !/unsafe-inline|unsafe-eval/.test(csp.s
 ok(/connect-src 'self' https:\/\/api\.themoviedb\.org(;|$)/.test(csp), 'CSP: network limited to api.themoviedb.org');
 ok(/manifest-src 'self'/.test(csp) && /worker-src 'self'/.test(csp), 'CSP: manifest and workers only from self');
 ok(/url\.origin !== self\.location\.origin\) return/.test(texts['sw.js']) && !/api\.themoviedb|api_key/.test(texts['sw.js']), 'service worker ignores cross-origin requests (API calls and key never touched)');
+ok(/fetch\(req, \{ cache: 'no-cache' \}\)/.test(texts['sw.js']), 'service worker revalidates files so one page never mixes old and new modules');
 ok(/serviceWorker\.register\('sw\.js'\)/.test(texts['js/app.js']), 'app registers the service worker');
 const jsFiles = files.map(rel).filter(f => /^js\/.*\.js$/.test(f)), fontFiles = files.map(rel).filter(f => /^fonts\/.*\.woff2$/.test(f));
 ok([...jsFiles, ...fontFiles, 'css/style.css', 'index.html'].every(f => texts['sw.js'].includes(`'${f}'`)), 'every js/font/css file is listed in sw.js offline shell (add new files there)');
