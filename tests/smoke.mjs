@@ -485,6 +485,27 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
   await c.close();
 }
 
+// 24. Back returns to the scroll position; following a link starts at the top
+{
+  const c = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 900, height: 600 } });
+  const pg = await c.newPage();
+  await pg.addInitScript(() => localStorage.setItem('settings', JSON.stringify({ apiKey: 'k', onboarded: true, lang: 'en', country: 'KR', myOtts: [] })));
+  await pg.route('https://api.themoviedb.org/**', r => {
+    const u = r.request().url();
+    r.fulfill({ json: /watch\/providers/.test(u) ? { results: {} } : /\/movie\/\d+\?/.test(u) ? { id: 3, title: 'Detail Film', overview: 'o' } : { results: Array.from({ length: 40 }, (_, i) => ({ id: i + 1, media_type: 'movie', title: 'Film ' + (i + 1), release_date: '2020-01-01' })) } });
+  });
+  await pg.route(/image\.tmdb/, r => r.fulfill({ status: 204 }));
+  await pg.goto(base + '/#/search?q=many'); await pg.waitForSelector('#results .card');
+  await pg.evaluate(() => scrollTo(0, 900)); await pg.waitForTimeout(100);
+  const before = await pg.evaluate(() => scrollY);
+  await pg.evaluate(() => document.querySelectorAll('#results .card')[20].click());
+  await pg.waitForSelector('.article');
+  ok(await pg.evaluate(() => scrollY) === 0, 'following a link starts at the top of the new page');
+  await pg.goBack(); await pg.waitForSelector('#results .card'); await pg.waitForFunction(y => Math.abs(scrollY - y) < 5, before, { timeout: 4000 }).catch(() => {});
+  ok(Math.abs(await pg.evaluate(() => scrollY) - before) < 5 && before > 300, 'Back returns to the previous scroll position');
+  await c.close();
+}
+
 ok(errors.length === 0, 'no JS errors' + (errors.length ? ': ' + errors.join('; ') : ''));
 await browser.close(); server.close();
 process.exit(fails ? 1 : 0);
