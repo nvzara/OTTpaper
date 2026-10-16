@@ -59,6 +59,8 @@ function errView(e) {
     const m = t(e.message === 'NO_KEY' ? 'err_nokey' : 'err_badkey');
     return `<div class="err">${I.info()} ${m} ${t('err_open')} <a href="#/settings">${t('settings')}</a>${t('err_open2')}</div>`;
   }
+  if (e.message === 'HTTP_429') return `<div class="err">${I.info()} ${t('err_rate')}</div>`;
+  if (!navigator.onLine || e.name === 'TypeError') return `<div class="err">${I.info()} ${t('err_offline')}</div>`;   // fetch() rejects with TypeError when the network is unreachable
   return `<div class="err">${I.info()} ${esc(t('err_load', e.message))}</div>`;
 }
 

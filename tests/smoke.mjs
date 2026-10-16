@@ -328,6 +328,17 @@ ok(await page.locator('#again').count() === 1, 'tonight: "another one" available
 await page.click('[data-type=tv]');
 ok(await page.locator('[data-mood=horror]').count() === 0 && await page.locator('[data-mood=crime]').count() === 1, 'tonight: moods follow the media type');
 
+// 19. friendly errors: network down -> offline message; rate limit -> rate message
+for (const [mode, expect] of [['abort', 'offline'], ['429', 'limiting requests']]) {
+  const c = await browser.newContext({ serviceWorkers: 'block' });
+  const pg = await c.newPage();
+  await pg.addInitScript(() => localStorage.setItem('settings', JSON.stringify({ apiKey: 'k', onboarded: true, lang: 'en', myOtts: [], country: 'KR' })));
+  await pg.route('https://api.themoviedb.org/**', r => mode === 'abort' ? r.abort('failed') : r.fulfill({ status: 429, body: '{}' }));
+  await pg.goto(base + '/#/search?q=x'); await pg.waitForSelector('.err');
+  ok((await pg.locator('.err').innerText()).includes(expect), `friendly error for ${mode === 'abort' ? 'network failure' : 'HTTP 429'}`);
+  await c.close();
+}
+
 // 17. PWA: manifest + service worker; app shell opens offline; SW never handles cross-origin
 {
   const c = await browser.newContext({ serviceWorkers: 'allow' });

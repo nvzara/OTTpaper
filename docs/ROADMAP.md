@@ -2,7 +2,7 @@
 
 **Core:** OTT unified search is the main feature — every iteration must keep search/where-to-watch fast, correct and easy.
 **Identity:** a newspaper (paper tones, serif, rules, columns) + original features that only a static GitHub Pages site can do.
-**Hard rules:** see `docs/ATTRIBUTION.md`. Keep MIT + credits correct. Run all tests before every push (`node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs`). Keep the three languages in sync. Small, verified, well-organized changes; update README/ATTRIBUTION when behaviour or third-party use changes.
+**Hard rules:** see `docs/ATTRIBUTION.md`. Keep MIT + credits correct. Run all tests before every push (`node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && node tests/contrast.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs`). Keep the three languages in sync. Small, verified, well-organized changes; update README/ATTRIBUTION when behaviour or third-party use changes.
 
 ## Done
 - [x] Search, detail with where-to-watch (per type, my OTT first), tabs, history
@@ -21,10 +21,11 @@
 7. ~~Print edition~~ (done: print button on Clippings + print CSS)
 8. **Share** — copyable deep links; Open Graph meta.
 9. **News**: verify feeds in Actions logs; add ko/ja sources only after confirming terms + URL; per-service filter chips.
-10. Accessibility pass (contrast, focus, screen-reader labels), performance pass (image sizes, lazy loading).
+10. ~~Accessibility pass~~ (contrast test for all themes, labels, skip link). Performance: posters already lazy + w342; nothing heavy left.
 
 ## Iteration log
 - v1: newspaper theme, masthead, The Wire, attribution doc, roadmap.
+- v11: contrast test (48 checks, all themes pass), friendly offline/429 errors. Deploy 16 green.
 - v10: search suggestions (datalist from recent searches), skip link, print edition of clippings. Deploy 15 green.
 - v9: search decade/sort filters (js/filters.js), news per-service chips; search re-render keeps availability badges. Deploy 14 green.
 - v8: Tonight picker (js/tonight.js; uses TMDB discover + provider filter), nav labels for a11y. Deploy 13 (PWA) green.

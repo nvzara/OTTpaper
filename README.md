@@ -49,6 +49,7 @@ tests/security.mjs  static security/licensing checks (CSP, key handling, fonts, 
 tests/advisor.mjs advisor unit test
 tests/tonight.mjs picker unit test
 tests/filters.mjs filter unit test
+tests/contrast.mjs WCAG contrast check for all themes
 tests/news.mjs    RSS parser unit test
 tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 ```
@@ -63,6 +64,7 @@ tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 - Clippings: save titles from the title page; stored locally, included in backups, kept when you delete history. Press `/` anywhere to jump to search.
 - Tonight (`#/tonight`): choose type, mood and length; OTTpaper asks TMDB for popular titles available on *your* services (TMDB's own provider filter) and picks one; "Another one" re-rolls.
 - Today's lead: a front-page story on Home, one pick per day from trending titles, preferring ones on your own services.
+- Accessibility: contrast of every theme is checked automatically (WCAG AA), keyboard skip link, labelled icon nav, reduced-motion support; friendly offline / rate-limit messages.
 - Search suggestions from your own recent searches (browser datalist), "skip to content" link, and a print edition of your clippings (print stylesheet).
 - Search filters: decade and sort (relevance / newest / top rated) on top of the "on my services" filter; the Wire has per-service chips.
 - Search shows an "on my services" badge (and a filter) on results available via your own services; title pages include a worldwide availability table.
@@ -74,7 +76,7 @@ tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 
 ## Tests
 
-Run before every push: `node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
+Run before every push: `node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && node tests/contrast.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
 
 ## License
 
