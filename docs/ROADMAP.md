@@ -25,6 +25,7 @@
 
 ## Iteration log
 - v1: newspaper theme, masthead, The Wire, attribution doc, roadmap.
+- v14b: Actions log confirmed all 7 feeds reachable (Variety 4, Variety-TV 5, THR-TV 4, Deadline 4, Verge 2, Deadline-TV 0, THR 0 → 16 items). Keywords broadened for the 0-item feeds. Tip: read the news result with get_job_logs tail_lines≈158 (the log is large).
 - v14: +3 candidate TV-section feeds (Variety/Deadline/THR; URLs unverified from sandbox — check Actions log ok/FAIL next cycle and drop failures). Deploy 19 (refactor) green; CI log: THR main feed gave 0 items.
 - v13: refactor — app.js (563 lines) split into js/ui.js + js/views/*.js; verified by eslint no-undef/no-unused + all tests (92 browser checks). Deploy 18 green.
 - v12: trailer link + recommendations on title pages (extra data via append_to_response; no new requests).
