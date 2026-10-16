@@ -89,6 +89,17 @@ ok((await page.locator('.avail').first().innerText()).length > 0, 'search: "on m
 await page.click('#onlyMine');
 ok(await page.locator('#results.only-mine').count() === 1 && await page.locator('.card.on-mine').first().isVisible(), 'search: "my services only" filter keeps matching titles');
 
+// search filters (mock result is a 2020 movie)
+await page.click('[data-decade="2010"]');
+ok(await page.locator('#results .card').count() === 0, 'search: decade filter hides non-matching titles');
+await page.click('[data-decade="2020"]');
+ok(await page.locator('#results .card').count() === 1, 'search: decade filter keeps matching titles');
+await page.click('[data-decade="any"]'); await page.click('[data-sort="top"]');
+ok(await page.locator('[data-sort="top"][aria-pressed="true"]').count() === 1 && await page.locator('#results .card').count() === 1, 'search: sort chips work');
+await page.waitForSelector('.card.on-mine');
+await page.click('[data-decade="2010"]'); await page.click('[data-decade="any"]');
+ok(await page.locator('.card.on-mine .avail').count() === 1, 'search: "on my services" badge survives re-filtering');
+
 // 6. settings: change + save, theme
 await page.click('#navSet'); await page.waitForSelector('#save');
 await page.selectOption('#country', 'US');
@@ -211,6 +222,10 @@ ok(await page.locator('.story').count() === 2 && (await page.locator('.story.lea
 ok(await page.locator('.story a[href^="javascript"]').count() === 0, 'unsafe news links neutralized');
 ok((await page.locator('.story.lead a').first().getAttribute('rel')).includes('noopener'), 'news links open safely');
 ok((await page.locator('main').innerText()).includes('do not') || (await page.locator('main').innerText()).includes('does not host'), 'news attribution shown');
+await page.click('[data-ns=netflix]');
+ok(await page.locator('.story').count() === 0, 'news: service filter hides unrelated stories');
+await page.click('[data-ns=all]');
+ok(await page.locator('.story').count() === 2, 'news: "All" restores stories');
 await page.unroute('**/news/news.json');
 await page.route('**/news/news.json', r => r.fulfill({ status: 404 }));
 await page.goto(base + '/#/news'); await page.reload(); await page.waitForSelector('.err');

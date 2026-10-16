@@ -151,3 +151,4 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 .lead-h{display:block;font:900 clamp(26px,5vw,42px)/1.1 var(--hf);margin:6px 0}.lead-h a{color:inherit;text-decoration:none}.lead-h a:hover{text-decoration:underline}
 .lead-story .more{font:700 12px var(--sans);text-transform:uppercase;letter-spacing:.08em}
 @media (max-width:640px){.lead-story{grid-template-columns:110px 1fr;gap:14px}.lead-story p:not(.meta){display:none}}
+.filters .chips{align-items:center}.chiplabel{font:700 11px var(--sans);text-transform:uppercase;letter-spacing:.12em;color:var(--mut);margin-right:4px}

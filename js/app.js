@@ -6,6 +6,7 @@ import {
   clippings, forgetApiKey, buildBackup, restoreBackup, clearUserData, requestPersistence,
 } from './store.js';
 import { computeCoverage, onMyServices, worldwideRows, pickLead } from './advisor.js';
+import { DECADES, SORTS, filterSearch, NEWS_SERVICES, newsMatches } from './filters.js';
 import { MOODS, LENGTHS, resolveProviderIds, buildDiscoverParams, pickOne } from './tonight.js';
 import { t, getLang, LANGS, countryName } from './i18n.js';
 
@@ -207,17 +208,37 @@ async function searchView(q) {
   $app.innerHTML = `<h2 class="sec">${I.search()} ${esc(t('search_results', q))}</h2><div id="list"><p class="note">${t('searching')}</p></div>`;
   try {
     const d = await T.search(q);
-    const r = d.results.filter(x => x.media_type === 'movie' || x.media_type === 'tv');
-    const by = ty => r.filter(x => x.media_type === ty);
+    const items = d.results.filter(x => x.media_type === 'movie' || x.media_type === 'tv');
     const mine = new Set(getSettings().myOtts);
-    $('#list').innerHTML = (mine.size ? `<div class="chips"><button id="onlyMine" aria-pressed="false">${I.check()} ${t('filter_mine')}</button></div><p class="note" id="availNote">${t('avail_checking')}</p>` : '') +
-      `<div id="results"><h2 class="sec">${I.film()} ${t('movies')}</h2>${grid(by('movie'))}<h2 class="sec">${I.tv()} ${t('tv')}</h2>${grid(by('tv'))}</div>`;
-    if (mine.size) markAvailability(r.slice(0, 24), mine);
+    const st = { decade: 'any', sort: 'rel', onlyMine: false }, avail = new Set();   // avail: "type:id" keys on my services
+    const chips = (name, opts, cur) => `<div class="chips" role="radiogroup" aria-label="${esc(opts.label)}"><span class="chiplabel">${esc(opts.label)}</span>${opts.items.map(([v, l]) => `<button data-${name}="${v}" aria-pressed="${v === cur}">${esc(l)}</button>`).join('')}</div>`;
+    const render = () => {
+      const r = filterSearch(items, st), by = ty => r.filter(x => x.media_type === ty);
+      $('#results').innerHTML = `<h2 class="sec">${I.film()} ${t('movies')}</h2>${grid(by('movie'))}<h2 class="sec">${I.tv()} ${t('tv')}</h2>${grid(by('tv'))}`;
+      $('#results').classList.toggle('only-mine', st.onlyMine);
+      for (const k of avail) decorate(k);
+    };
+    $('#list').innerHTML = `<div class="filters">
+      ${chips('decade', { label: t('f_decade'), items: DECADES.map(k => [k, k === 'any' ? t('tn_any') : t('d_' + k)]) }, st.decade)}
+      ${chips('sort', { label: t('f_sort'), items: SORTS.map(k => [k, t('sort_' + k)]) }, st.sort)}
+      ${mine.size ? `<div class="chips"><button id="onlyMine" aria-pressed="false">${I.check()} ${t('filter_mine')}</button></div><p class="note" id="availNote">${t('avail_checking')}</p>` : ''}</div>
+      <div id="results"></div>`;
+    for (const k of ['decade', 'sort']) document.querySelectorAll(`[data-${k}]`).forEach(b => b.onclick = () => {
+      st[k] = b.dataset[k]; document.querySelectorAll(`[data-${k}]`).forEach(x => x.setAttribute('aria-pressed', x === b)); render();
+    });
+    const btn = $('#onlyMine');
+    if (btn) btn.onclick = () => { st.onlyMine = btn.getAttribute('aria-pressed') !== 'true'; btn.setAttribute('aria-pressed', st.onlyMine); $('#results').classList.toggle('only-mine', st.onlyMine); };
+    const decorate = k => {
+      const el = $(`.card[data-k="${k}"]`);
+      if (el && !el.classList.contains('on-mine')) { el.classList.add('on-mine'); el.querySelector('.p')?.insertAdjacentHTML('beforeend', `<span class="avail">${I.check()} ${t('badge_mine')}</span>`); }
+    };
+    render();
+    if (mine.size) markAvailability(items.slice(0, 24), mine, k => { avail.add(k); decorate(k); });
   } catch (e) { $('#list').innerHTML = errView(e); }
 }
 
-// Badge search results that are on one of MY services (runs in the background; provider data is cached 3 days).
-async function markAvailability(items, mine) {
+// Find search results that are on one of MY services (background; provider data is cached 3 days) and report each via onHit.
+async function markAvailability(items, mine, onHit) {
   const country = getSettings().country;
   let next = 0;
   const worker = async () => {
@@ -225,14 +246,10 @@ async function markAvailability(items, mine) {
       const it = items[next++];
       try {
         const pv = await T.providers(it.media_type, it.id);
-        if (!onMyServices(pv.results?.[country], mine).length) continue;
-        const el = $(`.card[data-k="${it.media_type}:${Number(it.id)}"]`);
-        if (el) { el.classList.add('on-mine'); el.querySelector('.p')?.insertAdjacentHTML('beforeend', `<span class="avail">${I.check()} ${t('badge_mine')}</span>`); }
+        if (onMyServices(pv.results?.[country], mine).length) onHit(`${it.media_type}:${Number(it.id)}`);
       } catch (e) { if (e.message === 'NO_KEY' || e.message === 'BAD_KEY') return; }
     }
   };
-  const btn = $('#onlyMine');
-  if (btn) btn.onclick = () => { const on = btn.getAttribute('aria-pressed') !== 'true'; btn.setAttribute('aria-pressed', on); $('#results')?.classList.toggle('only-mine', on); };
   await Promise.all([worker(), worker(), worker(), worker()]);
   $('#availNote')?.remove();
 }
@@ -413,13 +430,21 @@ async function newsView() {
   let d = null;
   try { const r = await fetch('news/news.json', { cache: 'no-cache' }); if (r.ok) d = await r.json(); } catch {}
   const items = Array.isArray(d?.items) ? d.items.slice(0, 60) : [];
-  $('#wire').innerHTML = !items.length ? `<div class="err">${I.info()} ${t('news_empty')}</div>` :
-    `<p class="note">${t('news_updated', fmtDate(d.generatedAt, { dateStyle: 'medium', timeStyle: 'short' }))}</p>
-    <div class="wire">${items.map((n, i) => `<article class="story${i === 0 ? ' lead' : ''}">
+  if (!items.length) { $('#wire').innerHTML = `<div class="err">${I.info()} ${t('news_empty')}</div>`; return; }
+  const label = k => k === 'all' ? t('ns_all') : t('ns_' + k) !== 'ns_' + k ? t('ns_' + k) : k[0].toUpperCase() + k.slice(1);
+  const paint = key => {
+    const list = items.filter(n => newsMatches(n, key));
+    $('#wireList').innerHTML = list.map((n, i) => `<article class="story${i === 0 ? ' lead' : ''}">
       <div class="kicker">${esc(n.source)}${n.published ? ' · ' + esc(fmtDate(n.published, { dateStyle: 'medium' })) : ''}</div>
       <h3><a href="${esc(httpUrl(n.link))}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></h3>
       ${n.summary ? `<p>${esc(n.summary)}</p>` : ''}
-      <a class="more" href="${esc(httpUrl(n.link))}" target="_blank" rel="noopener noreferrer">${esc(t('news_read', n.source))} ${I.external()}</a></article>`).join('')}</div>`;
+      <a class="more" href="${esc(httpUrl(n.link))}" target="_blank" rel="noopener noreferrer">${esc(t('news_read', n.source))} ${I.external()}</a></article>`).join('') || `<p class="note">${t('no_results')}</p>`;
+  };
+  $('#wire').innerHTML = `<p class="note">${t('news_updated', fmtDate(d.generatedAt, { dateStyle: 'medium', timeStyle: 'short' }))}</p>
+    <div class="chips" role="radiogroup" aria-label="${esc(t('news_service'))}">${['all', ...Object.keys(NEWS_SERVICES)].map(k => `<button data-ns="${k}" aria-pressed="${k === 'all'}">${esc(label(k))}</button>`).join('')}</div>
+    <div class="wire" id="wireList"></div>`;
+  paint('all');
+  document.querySelectorAll('[data-ns]').forEach(b => b.onclick = () => { document.querySelectorAll('[data-ns]').forEach(x => x.setAttribute('aria-pressed', x === b)); paint(b.dataset.ns); });
 }
 
 // ---- Settings ----

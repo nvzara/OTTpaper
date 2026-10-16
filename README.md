@@ -33,6 +33,7 @@ js/app.js         router + views (welcome, home, search, detail, settings)
 js/tmdb.js        TMDB API client + localStorage cache
 js/i18n.js        UI translations (en/ko/ja) + language detection
 sw.js / manifest.webmanifest / icons/   PWA: offline shell, install metadata, original app icon
+js/filters.js      search decade/sort filters + news service filter
 js/tonight.js      "Tonight" picker logic (moods, discover params, picking)
 js/advisor.js      subscription advisor logic (coverage of clippings per service)
 js/store.js       settings, history, backup/restore (validated), OTT/country lists
@@ -47,6 +48,7 @@ fonts/            bundled OFL fonts (Playfair Display, Source Serif 4) + license
 tests/security.mjs  static security/licensing checks (CSP, key handling, fonts, secrets)
 tests/advisor.mjs advisor unit test
 tests/tonight.mjs picker unit test
+tests/filters.mjs filter unit test
 tests/news.mjs    RSS parser unit test
 tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 ```
@@ -61,6 +63,7 @@ tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 - Clippings: save titles from the title page; stored locally, included in backups, kept when you delete history. Press `/` anywhere to jump to search.
 - Tonight (`#/tonight`): choose type, mood and length; OTTpaper asks TMDB for popular titles available on *your* services (TMDB's own provider filter) and picks one; "Another one" re-rolls.
 - Today's lead: a front-page story on Home, one pick per day from trending titles, preferring ones on your own services.
+- Search filters: decade and sort (relevance / newest / top rated) on top of the "on my services" filter; the Wire has per-service chips.
 - Search shows an "on my services" badge (and a filter) on results available via your own services; title pages include a worldwide availability table.
 - Subscription advisor (on Clippings): checks where your clipped titles stream in your country and shows which services cover the most, how many your own services cover, and the best one to add. Uses cached availability data; no prices.
 - Installable & offline: add OTTpaper to your home screen; the app shell works offline (own files only; API data is never cached by the service worker).
@@ -70,7 +73,7 @@ tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 
 ## Tests
 
-Run before every push: `node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
+Run before every push: `node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
 
 ## License
 
