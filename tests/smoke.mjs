@@ -488,10 +488,11 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
 // 24. Back returns to the scroll position; following a link starts at the top
 {
   const c = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 900, height: 600 } });
-  const pg = await c.newPage();
+  const pg = await c.newPage(); let slow = false;
   await pg.addInitScript(() => localStorage.setItem('settings', JSON.stringify({ apiKey: 'k', onboarded: true, lang: 'en', country: 'KR', myOtts: [] })));
-  await pg.route('https://api.themoviedb.org/**', r => {
+  await pg.route('https://api.themoviedb.org/**', async r => {
     const u = r.request().url();
+    if (slow && /search\/multi/.test(u)) await new Promise(res => setTimeout(res, 700));
     r.fulfill({ json: /watch\/providers/.test(u) ? { results: {} } : /\/movie\/\d+\?/.test(u) ? { id: 3, title: 'Detail Film', overview: 'o' } : { results: Array.from({ length: 40 }, (_, i) => ({ id: i + 1, media_type: 'movie', title: 'Film ' + (i + 1), release_date: '2020-01-01' })) } });
   });
   await pg.route(/image\.tmdb/, r => r.fulfill({ status: 204 }));
@@ -501,6 +502,8 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
   await pg.evaluate(() => document.querySelectorAll('#results .card')[20].click());
   await pg.waitForSelector('.article');
   ok(await pg.evaluate(() => scrollY) === 0, 'following a link starts at the top of the new page');
+  await pg.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('c:')).forEach(k => localStorage.removeItem(k)));   // the list reloads slowly this time
+  slow = true;
   await pg.goBack(); await pg.waitForSelector('#results .card'); await pg.waitForFunction(y => Math.abs(scrollY - y) < 5, before, { timeout: 4000 }).catch(() => {});
   ok(Math.abs(await pg.evaluate(() => scrollY) - before) < 5 && before > 300, 'Back returns to the previous scroll position');
   await c.close();

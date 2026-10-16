@@ -36,37 +36,13 @@ function applyLang() {
   $('#f1').innerHTML = t('f1'); $('#f2').textContent = t('f2'); $('#f3').textContent = t('f3');
 }
 
-// ---- Scroll position: Back/Forward returns to where the reader was; following a link starts at the top ----
-const scrollAt = new Map();   // hash -> scrollY when the reader left it
-let hereHash = location.hash, lastY = 0, linkNav = false, restoreTimer = 0;
-addEventListener('scroll', () => { lastY = scrollY; }, { passive: true });
-const markLink = () => { linkNav = true; setTimeout(() => { linkNav = false; }, 400); };   // a click that changes the hash is not Back/Forward
-document.addEventListener('click', markLink, true);   // any click: links, chips and buttons that navigate all start at the top
-document.addEventListener('submit', markLink, true);
-function restoreScroll(y) {
-  clearTimeout(restoreTimer);
-  let tries = 0;
-  const step = () => {   // the screen fills in asynchronously: keep trying until the page is tall enough
-    const max = document.documentElement.scrollHeight - innerHeight;
-    if (max >= y || ++tries > 20) { scrollTo(0, Math.min(y, Math.max(max, 0))); return; }
-    restoreTimer = setTimeout(step, 100);
-  };
-  step();
-}
-
 // ---- Router ----
 function route() {
   beginView();
   const h = location.hash.slice(1) || '/';
   const [path, qs] = h.split('?');
   const parts = path.split('/').filter(Boolean);
-  clearTimeout(restoreTimer);
-  const moved = hereHash !== location.hash;
-  if (moved) scrollAt.set(hereHash, lastY);
-  const back = moved && !linkNav && scrollAt.get(location.hash) > 0 ? scrollAt.get(location.hash) : 0;
-  hereHash = location.hash; linkNav = false;
   window.scrollTo(0, 0);
-  if (back) restoreScroll(back);
   document.title = t('page_title');
   const first = !getSettings().onboarded;
   document.querySelectorAll('.nav a').forEach(a => {
