@@ -11,6 +11,7 @@ export function tonightView() {
   const s = getSettings(), hasMine = s.myOtts.length > 0;
   if (!hasMine) tn.mine = false;
   if (!MOODS[tn.type][tn.mood]) tn.mood = '';
+  if (!LENGTHS[tn.type].includes(tn.len)) tn.len = 0;   // lengths differ per type (film vs episode)
   const row = (label, name, opts, cur) => `<div class="row"><span class="lbl" id="lb-${name}">${label}</span><div class="chips" role="radiogroup" aria-labelledby="lb-${name}">${opts.map(([v, l]) => `<button data-${name}="${v}" aria-pressed="${String(cur) === String(v)}">${esc(l)}</button>`).join('')}</div></div>`;
   $app.innerHTML = pageHead({ kicker: t('tn_kicker'), title: t('tn_title'), deck: t('tn_sub') }) +
     `<section class="picker">
@@ -29,8 +30,9 @@ export function tonightView() {
   $('#spin').onclick = tonightSpin;
 }
 let tnList = [], tnSeen = new Set();
+let spinNo = 0;
 async function tonightSpin() {
-  const s = getSettings(), out = $('#tnOut');
+  const s = getSettings(), out = $('#tnOut'), no = ++spinNo;
   out.innerHTML = skStory();
   try {
     let ids = [], noprov = false;
@@ -39,11 +41,12 @@ async function tonightSpin() {
       noprov = !ids.length;
     }
     const params = buildDiscoverParams({ type: tn.type, mood: tn.mood, maxRuntime: tn.len || 0, region: s.country, providerIds: ids });
-    tnList = ((await T.discover(tn.type, params)).results || []).slice(0, 20).map(x => ({ ...x, media_type: tn.type }));
-    tnSeen = new Set();
+    const found = ((await T.discover(tn.type, params)).results || []).slice(0, 20).map(x => ({ ...x, media_type: tn.type }));
+    if (no !== spinNo) return;   // a newer request has taken over (double click)
+    tnList = found; tnSeen = new Set();
     out.dataset.noprov = noprov ? '1' : '';
     showTonight();
-  } catch (e) { out.innerHTML = errView(e); }
+  } catch (e) { if (no === spinNo) out.innerHTML = errView(e); }
 }
 function showTonight() {
   const out = $('#tnOut'), pick = pickOne(tnList, tnSeen);

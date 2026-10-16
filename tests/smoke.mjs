@@ -132,6 +132,7 @@ await page.waitForFunction(() => location.hash.startsWith('#/search?q=abc'));
 ok(await page.locator('#sug').isHidden(), 'recent searches: Enter on a highlighted entry searches it and closes the panel');
 await page.fill('#q', 'second'); await page.press('#q', 'Enter'); await page.waitForSelector('.card');
 await page.fill('#q', ''); await page.click('#q');
+if (await page.locator('#sug').isHidden()) await page.keyboard.press('ArrowDown');   // a click right after the page re-render can land before the panel listener is ready
 await page.waitForSelector('#sug:not([hidden]) .sug-x');
 await page.click('#sug .sug-x >> nth=0');
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem('rs')).join()) === 'abc', 'recent searches: the x button removes one entry');
@@ -367,6 +368,9 @@ ok(tnReqs.some(u => u.includes('with_genres=35') && u.includes('with_runtime.lte
 ok(await page.locator('#again').count() === 1, 'tonight: "another one" available');
 await page.click('[data-type=tv]');
 ok(await page.locator('[data-mood=horror]').count() === 0 && await page.locator('[data-mood=crime]').count() === 1, 'tonight: moods follow the media type');
+ok(await page.locator('[data-len="0"]').getAttribute('aria-pressed') === 'true' && await page.locator('[data-len="90"]').count() === 0, 'tonight: switching type resets the film length (no stale 90-minute limit)');
+tnReqs.length = 0; await page.click('#spin'); await page.waitForSelector('#tnOut .lead-story h2 a');
+ok(tnReqs.length > 0 && tnReqs.every(u => !u.includes('with_runtime.lte')), 'tonight: no runtime limit sent after switching to TV');
 
 // 19. friendly errors: network down -> offline message; rate limit -> rate message
 for (const [mode, expect] of [['abort', 'offline'], ['429', 'limiting requests']]) {
