@@ -3,7 +3,7 @@ import { IMG } from './tmdb.js';
 import { I } from './icons.js';
 import {
   OTTS, COUNTRIES, ottKey, ottName, getSettings, saveSettings, recentSearch, recentViews,
-  clippings, buildBackup, restoreBackup, clearUserData, requestPersistence,
+  clippings, forgetApiKey, buildBackup, restoreBackup, clearUserData, requestPersistence,
 } from './store.js';
 import { t, getLang, LANGS, countryName } from './i18n.js';
 
@@ -13,10 +13,13 @@ const typeLabel = x => t(x === 'movie' ? 'type_movie' : 'type_tv');
 const KINDS = ['flatrate', 'free', 'ads', 'rent', 'buy'];
 const $ = (sel, root = document) => root.querySelector(sel);
 
+// Theme / font / size are plain data-attributes on <html>; styles live in css/style.css.
 function applyTheme() {
-  const theme = getSettings().theme;
-  if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.dataset.theme = theme;
+  const { theme, font, size } = getSettings();
+  const root = document.documentElement;
+  if (theme === 'auto') root.removeAttribute('data-theme'); else root.dataset.theme = theme;
+  if (font === 'paper') root.removeAttribute('data-font'); else root.dataset.font = font;
+  if (size === 'm') root.removeAttribute('data-size'); else root.dataset.size = size;
 }
 
 let toastTimer;
@@ -57,7 +60,10 @@ function errView(e) {
 }
 
 // ---- Settings form (shared by welcome + settings) ----
+// Unsaved form values survive a language switch in memory only (never written to storage).
+let draft = null;
 function formHtml(s) {
+  if (draft) { s = { ...s, ...draft }; draft = null; }
   const lang = s.lang;
   return `
   <section class="panel"><h2>${I.language()} ${t('lang_title')}</h2>
@@ -67,9 +73,11 @@ function formHtml(s) {
     <p class="note">${t('lang_disclaimer')}</p></section>
   <section class="panel"><h2>${I.key()} ${t('api_title')}</h2>
     <label class="fld"><span>${t('api_label')}</span>
-      <input id="key" type="password" autocomplete="off" spellcheck="false" value="${esc(s.apiKey)}" placeholder="${t('api_ph')}"></label>
-    <p class="note">${t('api_note')}
-      <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">${t('get_key')} ${I.external()}</a></p></section>
+      <span class="keyrow"><input id="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(s.apiKey)}" placeholder="${t('api_ph')}">
+      <button type="button" class="btn" id="keyToggle">${t('key_show')}</button></span></label>
+    <label class="chip inline"><input type="checkbox" id="remember"${s.rememberKey ? ' checked' : ''}><span>${t('key_remember')}</span></label>
+    <p class="note">${t('api_note')} ${t('sec_note')}</p>
+    <p class="note"><a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">${t('get_key')} ${I.external()}</a></p></section>
   <section class="panel"><h2>${I.globe()} ${t('country_title')}</h2>
     <label class="fld"><span>${t('country_label')}</span>
       <select id="country">${COUNTRIES.map(k =>
@@ -78,23 +86,37 @@ function formHtml(s) {
     <p class="note">${t('ott_note')}</p>
     <div class="chk">${OTTS.map(o => `<label class="chip"><input type="checkbox" class="ott" value="${o.key}"${s.myOtts.includes(o.key) ? ' checked' : ''}><span>${esc(ottName(o, getLang()))}</span></label>`).join('')}</div></section>
   <section class="panel"><h2>${I.palette()} ${t('theme_title')}</h2>
-    <div class="seg" role="radiogroup" aria-label="${t('theme_title')}">${['auto', 'light', 'dark'].map(k =>
-      `<label><input type="radio" name="theme" value="${k}"${k === s.theme ? ' checked' : ''}><span>${t('theme_' + k)}</span></label>`).join('')}</div></section>`;
+    <div class="seg" role="radiogroup" aria-label="${t('theme_title')}">${['auto', 'ivory', 'white', 'black'].map(k =>
+      `<label><input type="radio" name="theme" value="${k}"${k === s.theme ? ' checked' : ''}><span>${t('theme_' + k)}</span></label>`).join('')}</div></section>
+  <section class="panel"><h2>${I.type()} ${t('font_title')}</h2>
+    <label class="fld"><span>${t('font_label')}</span>
+      <select id="font">${['paper', 'serif', 'sans', 'mono'].map(k => `<option value="${k}"${k === s.font ? ' selected' : ''}>${t('font_' + k)}</option>`).join('')}</select></label>
+    <div class="seg" role="radiogroup" aria-label="${t('size_label')}">${['s', 'm', 'l', 'xl'].map(k =>
+      `<label><input type="radio" name="size" value="${k}"${k === s.size ? ' checked' : ''}><span>${t('size_' + k)}</span></label>`).join('')}</div>
+    <p class="note preview">${t('motto')}</p></section>`;
 }
 function readForm() {
   return {
-    apiKey: $('#key').value.trim(), country: $('#country').value, lang: $('#lang').value,
-    theme: ($('input[name=theme]:checked') || {}).value || 'auto',
+    apiKey: $('#key').value.trim(), rememberKey: $('#remember').checked, country: $('#country').value, lang: $('#lang').value,
+    theme: ($('input[name=theme]:checked') || {}).value || 'auto', font: $('#font').value,
+    size: ($('input[name=size]:checked') || {}).value || 'm',
     myOtts: [...document.querySelectorAll('.ott:checked')].map(x => x.value),
   };
 }
 // Changing the language re-renders the page in the new language; keep whatever was typed so far.
 function bindLang() {
-  $('#lang').onchange = () => { saveSettings(readForm()); applyLang(); route(); };
+  $('#lang').onchange = () => { draft = readForm(); saveSettings({ lang: draft.lang }); applyLang(); route(); };
 }
-// Live theme preview while choosing.
-const previewTheme = () => document.querySelectorAll('input[name=theme]').forEach(r =>
-  r.addEventListener('change', () => { saveSettings({ theme: r.value }); applyTheme(); }));
+// Live preview of theme / font / size while choosing (saved immediately; the key is only saved with the Save button).
+const previewTheme = () => {
+  document.querySelectorAll('input[name=theme],input[name=size],#font').forEach(el => el.addEventListener('change', () => {
+    const f = readForm(); saveSettings({ theme: f.theme, font: f.font, size: f.size }); applyTheme();
+  }));
+  $('#keyToggle').onclick = () => {
+    const k = $('#key'), show = k.type === 'password';
+    k.type = show ? 'text' : 'password'; $('#keyToggle').textContent = t(show ? 'key_hide' : 'key_show');
+  };
+};
 
 // ---- Welcome (first visit) ----
 function welcomeView() {
@@ -266,16 +288,17 @@ function settingsView() {
     <p class="actions"><button class="btn primary" id="save">${I.check()} ${t('save')}</button></p>
     <section class="panel"><h2>${I.download()} ${t('backup_title')}</h2>
       <p class="note">${t('backup_note')}</p>
-      <label class="chip inline"><input type="checkbox" id="inclKey" checked><span>${t('incl_key')}</span></label>
+      <label class="chip inline"><input type="checkbox" id="inclKey"><span>${t('incl_key')}</span></label>
       <p class="note warn">${t('backup_warn')}</p>
       <p class="actions"><button class="btn" id="exp">${I.download()} ${t('backup_btn')}</button>
       <button class="btn" id="imp">${I.upload()} ${t('restore_btn')}</button>
       <input type="file" id="file" accept="application/json,.json" hidden></p></section>
     <section class="panel"><h2>${I.trash()} ${t('clear_title')}</h2>
       <p class="note">${t('clear_note')}</p>
-      <p class="actions"><button class="btn danger" id="clr">${I.trash()} ${t('clear_btn')}</button></p></section>
+      <p class="actions"><button class="btn danger" id="clr">${I.trash()} ${t('clear_btn')}</button>
+      <button class="btn danger" id="forget">${I.key()} ${t('key_forget')}</button></p></section>
     <section class="panel"><h2>${I.info()} ${t('credits_title')}</h2>
-      <ul class="credits"><li>${t('cr1')}</li><li>${t('cr2')}</li><li>${t('cr3')}</li><li>${t('cr4')}</li><li>${t('cr5')}</li></ul></section></div>`;
+      <ul class="credits"><li>${t('cr1')}</li><li>${t('cr2')}</li><li>${t('cr3')}</li><li>${t('cr4')}</li><li>${t('cr5')}</li><li>${t('cr6')}</li></ul></section></div>`;
   previewTheme(); bindLang();
   $('#save').onclick = () => {
     const f = readForm();
@@ -300,6 +323,7 @@ function settingsView() {
       toast(err instanceof SyntaxError ? t('bad_json') : err.message === 'TOO_BIG' ? t('too_big') : t('not_backup'));
     }
   };
+  $('#forget').onclick = () => { forgetApiKey(); $('#key').value = ''; toast(t('key_forgot')); };
   $('#clr').onclick = () => { if (confirm(t('clear_confirm'))) { clearUserData(); toast(t('cleared')); } };
 }
 

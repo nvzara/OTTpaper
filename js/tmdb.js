@@ -32,7 +32,8 @@ async function api(path, params = {}, ttl = DAY) {
   const ck = path + '?' + new URLSearchParams({ language: tmdbLang(), ...params });
   const hit = cacheGet(ck);
   if (hit) return hit;
-  const r = await fetch(`${BASE}${path}?${p}`, { headers });
+  // No cookies, no Referer: the key (v3: query string) only ever goes to api.themoviedb.org.
+  const r = await fetch(`${BASE}${path}?${p}`, { headers, credentials: 'omit', referrerPolicy: 'no-referrer' });
   if (r.status === 401) throw new Error('BAD_KEY');
   if (!r.ok) throw new Error('HTTP_' + r.status);
   const d = await r.json();

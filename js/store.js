@@ -17,7 +17,9 @@ export const COUNTRIES = ['KR', 'US', 'JP', 'GB', 'CA', 'AU', 'DE', 'FR']; // di
 export const LANG_CODES = ['en', 'ko', 'ja'];
 // Display name of a streaming service: Korean name for ko, brand name otherwise.
 export const ottName = (o, lang) => lang === 'ko' ? o.name : o.en;
-export const THEMES = ['auto', 'light', 'dark'];
+export const THEMES = ['auto', 'ivory', 'white', 'black'];
+export const FONTS = ['paper', 'serif', 'sans', 'mono'];
+export const SIZES = ['s', 'm', 'l', 'xl'];
 
 // Match TMDB provider names to our keys (substring, lowercase).
 const MATCH = { netflix: ['netflix'], disney: ['disney'], wavve: ['wavve'], tving: ['tving'], watcha: ['watcha'],
@@ -27,14 +29,33 @@ export function ottKey(name) {
   return OTTS.find(o => MATCH[o.key].some(m => n.includes(m)))?.key ?? null;
 }
 
-const DEF = { apiKey: '', country: 'KR', theme: 'auto', lang: 'auto', myOtts: [], onboarded: false };
+const DEF = { apiKey: '', rememberKey: true, country: 'KR', theme: 'auto', font: 'paper', size: 'm', lang: 'auto', myOtts: [], onboarded: false };
+const SESSION_KEY = 'ottpaper.session-key';
+const LEGACY_THEME = { light: 'ivory', dark: 'black' };
+
+// The API key is the only secret. It lives in this browser only: localStorage ("remember") or sessionStorage (cleared when the tab closes).
 export function getSettings() {
-  const s = { ...DEF, ...get('settings', {}) };
+  const raw = get('settings', {});
+  const s = { ...DEF, ...raw };
+  s.theme = LEGACY_THEME[s.theme] || (THEMES.includes(s.theme) ? s.theme : 'auto');
+  if (!s.apiKey) { try { s.apiKey = sessionStorage.getItem(SESSION_KEY) || ''; } catch {} }
   // Users who saved a key before the welcome screen existed are treated as onboarded.
-  if (s.apiKey && !('onboarded' in get('settings', {}))) s.onboarded = true;
+  if (s.apiKey && !('onboarded' in raw)) s.onboarded = true;
   return s;
 }
-export const saveSettings = s => set('settings', { ...getSettings(), ...s });
+export function saveSettings(patch) {
+  const next = { ...getSettings(), ...patch };
+  const { apiKey, ...rest } = next;
+  try {
+    if (!next.rememberKey && apiKey) sessionStorage.setItem(SESSION_KEY, apiKey); else sessionStorage.removeItem(SESSION_KEY);
+  } catch {}
+  return set('settings', { ...rest, apiKey: next.rememberKey ? apiKey : '' });
+}
+export function forgetApiKey() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+  const raw = get('settings', {});
+  set('settings', { ...raw, apiKey: '' });
+}
 
 const hist = (k, max) => ({
   list: () => get(k, []),
@@ -84,7 +105,9 @@ export function restoreBackup(raw) {
     apiKey: apiKey || cur.apiKey, // a key-less backup keeps the key already in this browser
     country: COUNTRIES.includes(s.country) ? s.country : cur.country,
     lang: s.lang === 'auto' || LANG_CODES.includes(s.lang) ? s.lang : cur.lang,
-    theme: THEMES.includes(s.theme) ? s.theme : cur.theme,
+    theme: THEMES.includes(LEGACY_THEME[s.theme] || s.theme) ? (LEGACY_THEME[s.theme] || s.theme) : cur.theme,
+    font: FONTS.includes(s.font) ? s.font : cur.font,
+    size: SIZES.includes(s.size) ? s.size : cur.size,
     myOtts: Array.isArray(s.myOtts) ? s.myOtts.filter(k => OTTS.some(o => o.key === k)) : cur.myOtts,
     onboarded: true,
   });

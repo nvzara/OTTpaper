@@ -23,9 +23,11 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Build site (only public files) + fetch news
         run: |
+          node tests/i18n.mjs
           node tests/news.mjs
+          node tests/security.mjs
           mkdir -p _site/news
-          cp -r index.html css js LICENSE _site/
+          cp -r index.html css js fonts LICENSE _site/
           cp news/feeds.json _site/news/ 2>/dev/null || true
           node scripts/fetch-news.mjs _site/news/news.json
       - uses: actions/upload-pages-artifact@v3

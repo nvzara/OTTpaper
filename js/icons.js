@@ -27,5 +27,6 @@ export const I = {
   language: () => svg('<path d="M4 6h9M8.5 4v2M6 6c.5 3 2.5 5.5 5.5 7M12 6c-.5 3-3 6-7 7.5"/><path d="m12 20 4-9 4 9M13.5 17h5"/>'),
   news: () => svg('<path d="M5 4h11v16H7a2 2 0 0 1-2-2z"/><path d="M16 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/>'),
   bookmark: filled => svg('<path d="M6 4h12v17l-6-4-6 4z"/>', filled ? 'filled' : ''),
+  type: () => svg('<path d="M4 7V5h16v2M12 5v14M9 19h6"/>'),
   sparkle: () => svg('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>'),
 };

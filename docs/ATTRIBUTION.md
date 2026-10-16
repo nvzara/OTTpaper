@@ -9,7 +9,13 @@ OTTpaper source code is **MIT** (see `LICENSE`). Everything below is third-party
 | News headlines | Publishers' public RSS feeds (`news/feeds.json`) | Build step stores **headline, ≤220-char excerpt, link, source, date** only; always links to the original; no article text/images | Source name on every item + notice on the news page + settings |
 | Streaming service names | Their owners | Text names only; **no logos**; links go to official home pages | "Not affiliated with any streaming service" — footer, settings |
 | Icons | Drawn for this project | Inline SVG in `js/icons.js` | — |
-| Fonts | Visitor's system fonts | No webfonts loaded, no third-party requests for fonts | — |
+| Fonts (default "Newspaper" typeface) | Playfair Display © The Playfair Display Project Authors; Source Serif 4 © Adobe Systems Incorporated — both SIL OFL 1.1 | Self-hosted unmodified WOFF2 in `fonts/` with license texts (`fonts/OFL-*.txt`, `fonts/README.md`); no font CDN | Credits in Settings (cr6) + `fonts/` |
+| Fonts (other choices) | Visitor's system fonts (serif / sans / mono, CJK) | Only named via CSS font stacks; nothing is shipped | — |
+
+## API key safety (TMDB key = the only secret)
+
+- Entered by the visitor, stored only in their browser (localStorage, or sessionStorage if "remember" is off); never in the repo, URL, logs or backups unless the box is ticked (off by default).
+- CSP + `no-referrer` + `credentials: omit`; network only to `api.themoviedb.org`; no third-party scripts/fonts/analytics. Enforced by `tests/security.mjs`.
 
 ## Rules for contributors / the improvement loop
 

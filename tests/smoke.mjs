@@ -23,6 +23,9 @@ const ctx = await browser.newContext({ acceptDownloads: true });
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
+const cspErrors = [], origins = new Set();
+page.on('console', m => { if (/Content Security Policy|Refused to/i.test(m.text())) cspErrors.push(m.text()); });
+page.on('request', r => origins.add(new URL(r.url()).origin));
 await page.route('https://api.themoviedb.org/**', r => {
   const u = r.request().url();
   let j = { results: [{ id: 1, media_type: 'movie', title: '<b>테스트</b>', poster_path: '/a.jpg', release_date: '2020-01-01', vote_average: 7.5 }] };
@@ -76,13 +79,22 @@ ok(page.url().includes('#/search?q=abc'), 'search works');
 // 6. settings: change + save, theme
 await page.click('#navSet'); await page.waitForSelector('#save');
 await page.selectOption('#country', 'US');
-await page.click('.seg label:has(input[value=dark])');
-ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'dark', 'theme preview applies');
+await page.click('.seg label:has(input[value=black])');
+ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'black', 'theme preview applies (black)');
+await page.click('.seg label:has(input[value=white])');
+ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'white', 'white theme');
+await page.click('.seg label:has(input[value=ivory])');
+ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'ivory', 'ivory theme');
+await page.click('.seg label:has(input[value=black])');
+await page.selectOption('#font', 'sans');
+await page.click('.seg label:has(input[value=l])');
+ok(await page.evaluate(() => document.documentElement.dataset.font + document.documentElement.dataset.size) === 'sansl', 'font + size apply');
 await page.click('#save');
 const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('settings')));
-ok(saved.country === 'US' && saved.theme === 'dark' && saved.apiKey === 'test-key' && saved.myOtts.includes('wavve'), 'settings saved');
+ok(saved.country === 'US' && saved.theme === 'black' && saved.font === 'sans' && saved.size === 'l' && saved.apiKey === 'test-key' && saved.myOtts.includes('wavve'), 'settings saved');
 
 // 7. backup download
+await page.click('label.chip:has(#inclKey)');
 const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#exp')]);
 const bk = JSON.parse(await readFile(await dl.path(), 'utf8'));
 ok(bk.app === 'OTTpaper' && bk.settings.apiKey === 'test-key' && bk.settings.country === 'US' && dl.suggestedFilename().startsWith('ottpaper-backup-'), 'backup file contains settings');
@@ -213,6 +225,41 @@ ok(true, 'restore brings clippings back');
 await page.goto(base + '/#/'); await page.waitForSelector('.card');
 await page.keyboard.press('/');
 ok(await page.evaluate(() => document.activeElement.id) === 'q', '"/" focuses search');
+
+
+// 15. security: key handling, CSP, third-party requests, fonts, themes
+await page.goto(base + '/#/settings'); await page.waitForSelector('#save');
+ok(await page.locator('#inclKey').isChecked() === false, 'backup "include API key" is off by default');
+ok(await page.getAttribute('#key', 'type') === 'password', 'API key field is masked');
+await page.click('#keyToggle');
+ok(await page.getAttribute('#key', 'type') === 'text', 'key can be revealed');
+await page.click('#keyToggle');
+// remember OFF -> key only in sessionStorage
+await page.click('label.chip:has(#remember)');
+await page.fill('#key', 'session-only-key'); await page.click('#save');
+const st = await page.evaluate(() => ({ ls: localStorage.getItem('settings'), ss: sessionStorage.getItem('ottpaper.session-key') }));
+ok(!st.ls.includes('session-only-key') && st.ss === 'session-only-key', 'remember off: key kept only in sessionStorage');
+await page.reload(); await page.waitForSelector('#key');
+ok(await page.inputValue('#key') === 'session-only-key', 'session key survives reload in same tab');
+// remember ON again, then forget
+await page.click('label.chip:has(#remember)'); await page.fill('#key', 'test-key'); await page.click('#save');
+await page.click('#forget');
+const gone = await page.evaluate(() => ({ ls: JSON.parse(localStorage.getItem('settings')).apiKey, ss: sessionStorage.getItem('ottpaper.session-key') }));
+ok(gone.ls === '' && gone.ss === null, 'forget removes the key everywhere');
+await page.fill('#key', 'test-key'); await page.click('#save');
+// fonts + themes
+await page.goto(base + '/#/'); await page.waitForSelector('.card');
+await page.evaluate(() => document.fonts.ready);
+ok(await page.evaluate(async () => { await document.fonts.load('900 20px "Playfair Display"'); return document.fonts.check('900 20px "Playfair Display"'); }), 'bundled Playfair Display font loads from our own origin');
+ok(await page.evaluate(async () => { await document.fonts.load('16px "Source Serif 4"'); return document.fonts.check('16px "Source Serif 4"'); }), 'bundled Source Serif 4 font loads');
+ok(cspErrors.length === 0, 'no CSP violations' + (cspErrors.length ? ': ' + cspErrors[0] : ''));
+const allowed = new Set([base, 'https://api.themoviedb.org', 'https://image.tmdb.org']);
+const foreign = [...origins].filter(o => !allowed.has(o));
+ok(foreign.length === 0, 'requests only to own origin / TMDB' + (foreign.length ? ': ' + foreign : ''));
+// legacy theme values migrate
+await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('settings')); s.theme = 'dark'; localStorage.setItem('settings', JSON.stringify(s)); });
+await page.reload(); await page.waitForSelector('.card');
+ok(await page.evaluate(() => document.documentElement.dataset.theme) === 'black', 'legacy "dark" theme migrates to black');
 
 ok(errors.length === 0, 'no JS errors' + (errors.length ? ': ' + errors.join('; ') : ''));
 await browser.close(); server.close();
