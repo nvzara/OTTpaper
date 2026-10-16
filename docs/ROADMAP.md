@@ -7,6 +7,7 @@
 Keep en/ko/ja in sync; list new files under `js/`, `css/`, `fonts/` in `sw.js`.
 
 ## Implemented
+- Robust local storage: malformed saved lists are validated on read; network failures are told apart from code errors
 - Supported countries: South Korea, Japan, English-speaking countries; recent-search index panel
 - Unified search with "on my services" badge/filter, decade + sort filters, recent-search suggestions
 - Newspaper design system across all screens (masthead + folio line, section index, section heads, kickers/decks/bylines, review stars, editor's-note empty states, quiet loading blocks, colophon, print edition)

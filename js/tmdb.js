@@ -33,7 +33,9 @@ async function api(path, params = {}, ttl = DAY) {
   const hit = cacheGet(ck);
   if (hit) return hit;
   // No cookies, no Referer: the key (v3: query string) only ever goes to api.themoviedb.org.
-  const r = await fetch(`${BASE}${path}?${p}`, { headers, credentials: 'omit', referrerPolicy: 'no-referrer' });
+  let r;
+  try { r = await fetch(`${BASE}${path}?${p}`, { headers, credentials: 'omit', referrerPolicy: 'no-referrer' }); }
+  catch { throw new Error('NETWORK'); }   // unreachable network (fetch rejects); other errors keep their own message
   if (r.status === 401) throw new Error('BAD_KEY');
   if (!r.ok) throw new Error('HTTP_' + r.status);
   const d = await r.json();

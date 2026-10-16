@@ -71,26 +71,39 @@ export function forgetApiKey() {
   set('settings', { ...raw, apiKey: '' });
 }
 
-const hist = (k, max) => ({
-  list: () => get(k, []),
-  add(v, same) { set(k, [v, ...get(k, []).filter(x => !same(x, v))].slice(0, max)); },
-  remove(same) { set(k, get(k, []).filter(x => !same(x))); },
-  clear: () => set(k, []),
-});
-export const recentSearch = hist('rs', 10);
-export const recentViews = hist('rv', 20);
+const str = (v, max) => typeof v === 'string' ? v.slice(0, max) : '';
+// A saved title as stored/exported: only well-formed fields survive (anything hand-edited or corrupted is dropped).
+export const cleanTitle = v => v && typeof v === 'object' && Number.isInteger(v.id) && (v.media_type === 'movie' || v.media_type === 'tv') ? {
+  id: v.id, media_type: v.media_type, title: str(v.title, 200),
+  poster_path: /^\/[\w.-]{1,80}$/.test(v.poster_path || '') ? v.poster_path : null,
+  release_date: str(v.release_date, 10), first_air_date: str(v.first_air_date, 10),
+} : null;
+const cleanQuery = v => typeof v === 'string' && v.trim() ? v.slice(0, 100) : null;
+// Lists live in localStorage; whatever is read back is validated so one bad entry can never blank a screen.
+const hist = (k, max, clean) => {
+  const list = () => { const a = get(k, []); return Array.isArray(a) ? a.map(clean).filter(Boolean) : []; };
+  return {
+    list,
+    add(v, same) { set(k, [v, ...list().filter(x => !same(x, v))].slice(0, max)); },
+    remove(same) { set(k, list().filter(x => !same(x))); },
+    clear: () => set(k, []),
+  };
+};
+export const recentSearch = hist('rs', 10, cleanQuery);
+export const recentViews = hist('rv', 20, cleanTitle);
 // The publisher's note is open on the first visit to the front page, then folded to one line.
 export const noticeSeen = { get: () => get('ns', false), set: () => set('ns', true) };
 
 // Clippings: titles the user saved (kept by "delete history", included in backups).
 const sameTitle = (a, b) => a.id === b.id && a.media_type === b.media_type;
+const clipList = () => { const a = get('cl', []); return Array.isArray(a) ? a.map(cleanTitle).filter(Boolean) : []; };
 export const clippings = {
-  list: () => get('cl', []),
-  has: v => get('cl', []).some(x => sameTitle(x, v)),
+  list: clipList,
+  has: v => clipList().some(x => sameTitle(x, v)),
   toggle(v) {
-    const l = get('cl', []);
+    const l = clipList();
     const has = l.some(x => sameTitle(x, v));
-    set('cl', has ? l.filter(x => !sameTitle(x, v)) : [v, ...l].slice(0, 300));
+    set('cl', has ? l.filter(x => !sameTitle(x, v)) : [cleanTitle(v), ...l].filter(Boolean).slice(0, 300));
     return !has;
   },
 };
@@ -110,7 +123,6 @@ export function buildBackup({ includeKey }) {
   };
 }
 
-const str = (v, max) => typeof v === 'string' ? v.slice(0, max) : '';
 // Validate and sanitize an untrusted backup file; throws on a file that is not an OTTpaper backup.
 export function restoreBackup(raw) {
   if (!raw || raw.app !== 'OTTpaper' || typeof raw.settings !== 'object' || raw.settings === null) {
@@ -128,11 +140,7 @@ export function restoreBackup(raw) {
     myOtts: Array.isArray(s.myOtts) ? s.myOtts.filter(k => OTTS.some(o => o.key === k)) : cur.myOtts,
     onboarded: true,
   });
-  const cleanView = v => v && Number.isInteger(v.id) && (v.media_type === 'movie' || v.media_type === 'tv') ? {
-    id: v.id, media_type: v.media_type, title: str(v.title, 200),
-    poster_path: /^\/[\w.-]{1,80}$/.test(v.poster_path || '') ? v.poster_path : null,
-    release_date: str(v.release_date, 10), first_air_date: str(v.first_air_date, 10),
-  } : null;
+  const cleanView = cleanTitle;
   if (Array.isArray(raw.recentSearch)) set('rs', raw.recentSearch.map(x => str(x, 100)).filter(Boolean).slice(0, 10));
   if (Array.isArray(raw.clippings)) set('cl', raw.clippings.map(cleanView).filter(Boolean).slice(0, 300));
   if (Array.isArray(raw.recentViews)) set('rv', raw.recentViews.map(cleanView).filter(Boolean).slice(0, 20));

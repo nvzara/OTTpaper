@@ -63,7 +63,7 @@ export async function detailView(type, id) {
     const [d, pv] = await Promise.all([T.detail(type, id), T.providers(type, id)]);
     // Titles without an overview in the chosen language fall back to the English one.
     if (!d.overview && getLang() !== 'en') d.overview = await T.overviewEn(type, id).catch(() => '');
-    const title = d.title || d.name;
+    const title = d.title || d.name || '—';   // a response without any title must not break the page
     document.title = `${title} — OTTpaper`;
     recentViews.add({ id: d.id, media_type: type, title, poster_path: d.poster_path,
       release_date: d.release_date, first_air_date: d.first_air_date }, (a, b) => a.id === b.id && a.media_type === b.media_type);

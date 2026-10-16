@@ -81,7 +81,7 @@ export function errView(e) {
     return `<div class="err">${I.info()}<span>${m} ${t('err_open')} <a href="#/settings">${t('settings')}</a>${t('err_open2')}</span></div>`;
   }
   if (e.message === 'HTTP_429') return `<div class="err">${I.info()}<span>${t('err_rate')}</span></div>`;
-  if (!navigator.onLine || e.name === 'TypeError') return `<div class="err">${I.info()}<span>${t('err_offline')}</span></div>`;   // fetch() rejects with TypeError when the network is unreachable
+  if (e.message === 'NETWORK' || !navigator.onLine) return `<div class="err">${I.info()}<span>${t('err_offline')}</span></div>`;   // tmdb.js maps a rejected fetch() to NETWORK; real code errors are shown as such, not as 'offline'
   return `<div class="err">${I.info()}<span>${esc(t('err_load', e.message))}</span></div>`;
 }
 

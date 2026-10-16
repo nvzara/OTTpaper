@@ -131,7 +131,8 @@ await page.fill('#q', ''); await page.focus('#q'); await page.keyboard.press('Ar
 await page.waitForFunction(() => location.hash.startsWith('#/search?q=abc'));
 ok(await page.locator('#sug').isHidden(), 'recent searches: Enter on a highlighted entry searches it and closes the panel');
 await page.fill('#q', 'second'); await page.press('#q', 'Enter'); await page.waitForSelector('.card');
-await page.fill('#q', ''); await page.focus('#q');
+await page.fill('#q', ''); await page.click('#q');
+await page.waitForSelector('#sug:not([hidden]) .sug-x');
 await page.click('#sug .sug-x >> nth=0');
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem('rs')).join()) === 'abc', 'recent searches: the x button removes one entry');
 await page.click('#sug .sug-clear');
@@ -394,6 +395,22 @@ for (const [mode, expect] of [['abort', 'offline'], ['429', 'limiting requests']
   await c.setOffline(true);
   await pg.reload(); await pg.waitForSelector('#q');
   ok((await pg.title()).includes('OTTpaper'), 'app shell opens offline');
+  await c.close();
+}
+
+// 20. robustness: corrupted storage and sparse API responses never blank a screen
+for (const [label, ls, hash, api, expect] of [
+  ['corrupted clippings/views storage', { cl: JSON.stringify([null, 7, { id: 5, media_type: 'movie', title: 'Kept' }]), rv: JSON.stringify([null, 1]) }, '/#/clippings', null, 'Kept'],
+  ['title response without a title', {}, '/#/title/movie/1', u => (/watch\/providers/.test(u) ? { results: {} } : { id: 1 }), 'CLIP IT'],
+]) {
+  const c = await browser.newContext({ serviceWorkers: 'block' });
+  const pg = await c.newPage(); const pe = [];
+  pg.on('pageerror', e => pe.push(e.message));
+  await pg.addInitScript(([l, st]) => { localStorage.setItem('settings', JSON.stringify(st)); for (const [k, v] of Object.entries(l)) localStorage.setItem(k, v); }, [ls, { apiKey: 'k', onboarded: true, lang: 'en', country: 'KR', myOtts: [] }]);
+  await pg.route('https://api.themoviedb.org/**', r => r.fulfill({ json: api ? api(r.request().url()) : { results: [] } }));
+  await pg.route(/image\.tmdb/, r => r.fulfill({ status: 204 }));
+  await pg.goto(base + hash); await pg.waitForSelector('main#app *'); await pg.waitForTimeout(500);
+  ok((await pg.locator('#app').innerText()).toUpperCase().includes(expect.toUpperCase()) && pe.length === 0, `robust: ${label}` + (pe.length ? ': ' + pe[0] : ''));
   await c.close();
 }
 
