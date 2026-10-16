@@ -440,3 +440,20 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-of
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 .news-index{justify-content:center}
+
+/* Small phones: narrower photo, calmer drop cap so the story column keeps a readable measure */
+@media (max-width:480px){
+  .lp{width:36%;margin-right:.85rem}
+  .lede{font-size:1rem;line-height:1.62}
+  :root:lang(ko) .lede,:root:lang(ja) .lede{line-height:1.8}
+  .lede.dc::first-letter{font-size:2.7em}
+  .art-body>.photo{width:36%}
+}
+
+/* Section index must never hide items behind a scroll on narrow phones: let it wrap instead of clipping */
+@media (max-width:480px){
+  .nav{flex-wrap:wrap;overflow:visible;padding:0 calc(var(--gut) - .42rem)}
+  .nav a{padding:.65rem .42rem;font-size:.63rem;letter-spacing:.05em}
+  .nav a.on::after{left:.42rem;right:.42rem}
+  .nav a+a::before{display:none}   /* separators look stray when the index wraps to a second line */
+}

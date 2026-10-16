@@ -85,7 +85,7 @@ async function renderLead() {
       <div class="lead-body">
         <figure class="lp"><a href="${href}" tabindex="-1" aria-hidden="true">${poster(it.poster_path, 'w500')}</a><figcaption><span class="credit">${esc(t('photo_credit'))}</span></figcaption></figure>
         ${over ? lede(over) : ''}
-        <p class="jump"><a href="${href}">${esc(t('lead_open'))} →</a></p>
+        <p class="jump"><a href="${href}">${esc(t('lead_open'))}&nbsp;→</a></p>
       </div></article>
       <div class="seconds">${seconds.map(x => {
         const xt = x.title || x.name, xy = yearOfItem(x), on = avail.get(`${x.media_type}:${x.id}`) > 0;
@@ -104,7 +104,7 @@ async function renderWire() {
     if (!el || !Array.isArray(items) || !items.length) return;
     el.innerHTML = `<h2 class="box-h">${t('rail_wire')}</h2><ul class="heads">${items.slice(0, 4).map(n => `<li><span class="kicker">${esc(n.source)}</span>
       <a href="${esc(httpUrl(n.link))}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></li>`).join('')}</ul>
-      <p class="jump"><a href="#/news">${t('nav_news')} →</a></p>`;
+      <p class="jump"><a href="#/news">${t('nav_news')}&nbsp;→</a></p>`;
     el.hidden = false;
   } catch {}
 }
