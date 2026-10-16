@@ -8,6 +8,8 @@ import { t, getLang, countryName } from '../i18n.js';
 import { $, $app, esc, fmtDate, fmtNum, typeLabel, toast, poster, grid, errView, sec, stars, lede, scriptCls, skStory } from '../ui.js';
 
 let kindFilter = 'all';
+// TMDB returns status in English; show it in the interface language when we know the word.
+const statusLabel = st => { if (!st) return ''; const k = 'st_' + st.replace(/\W/g, ''); const v = t(k); return v === k ? st : v; };
 const KINDS = ['flatrate', 'free', 'ads', 'rent', 'buy'];
 function certification(d, type, country) {
   if (type === 'movie') {
@@ -79,7 +81,7 @@ export async function detailView(type, id) {
       [t('fact_runtime'), run ? esc(t('min', run)) : ''],
       [t('fact_seasons'), type === 'tv' && d.number_of_seasons ? esc(t('seasons', d.number_of_seasons, d.number_of_episodes)) : ''],
       [t('fact_released'), esc(d.release_date || d.first_air_date ? fmtDate(d.release_date || d.first_air_date, { dateStyle: 'long' }) : '')],
-      [t('fact_status'), esc(d.status || '')],
+      [t('fact_status'), esc(statusLabel(d.status))],
       [t('orig_title'), origTitle && origTitle !== title ? esc(origTitle) : ''],
     ].filter(([, v]) => v);
     const pr = pv.results?.[s.country];
