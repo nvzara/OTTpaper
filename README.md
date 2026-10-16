@@ -62,6 +62,7 @@ tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 - The Wire (News): a GitHub Action fetches public RSS feeds every 3 hours at build time and publishes `news/news.json` (headline, short excerpt and link only). Open it at `#/news`. It is empty locally and until the first deployment.
 - Newspaper design: masthead, serif type, column layout, print stylesheet; dark mode is the night edition.
 - Clippings: save titles from the title page; stored locally, included in backups, kept when you delete history. Press `/` anywhere to jump to search.
+- Title pages: trailer link (opens YouTube in a new tab — no embeds, nothing loaded from YouTube until you click) and a "You may also like" row of TMDB recommendations.
 - Tonight (`#/tonight`): choose type, mood and length; OTTpaper asks TMDB for popular titles available on *your* services (TMDB's own provider filter) and picks one; "Another one" re-rolls.
 - Today's lead: a front-page story on Home, one pick per day from trending titles, preferring ones on your own services.
 - Accessibility: contrast of every theme is checked automatically (WCAG AA), keyboard skip link, labelled icon nav, reduced-motion support; friendly offline / rate-limit messages.

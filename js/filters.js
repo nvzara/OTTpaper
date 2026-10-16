@@ -23,3 +23,10 @@ export const NEWS_SERVICES = {
   paramount: ['paramount'], hulu: ['hulu'], peacock: ['peacock'], crunchyroll: ['crunchyroll'],
 };
 export const newsMatches = (n, key) => key === 'all' || (NEWS_SERVICES[key] || []).some(k => `${n.title} ${n.summary || ''} `.toLowerCase().includes(k));
+
+// Best YouTube trailer key from TMDB `videos.results` (official trailers first, then any trailer/teaser); null if none or key looks unsafe.
+export function pickTrailer(videos) {
+  const yt = (videos || []).filter(v => v.site === 'YouTube' && /^[\w-]{6,20}$/.test(v.key || ''));
+  const rank = v => (v.type === 'Trailer' ? 0 : v.type === 'Teaser' ? 2 : 4) + (v.official ? 0 : 1);
+  return yt.sort((a, b) => rank(a) - rank(b))[0]?.key || null;
+}

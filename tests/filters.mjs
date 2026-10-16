@@ -1,5 +1,5 @@
 // Unit test for search/news filters. Run: node tests/filters.mjs
-const { filterSearch, inDecade, yearOf, newsMatches } = await import('../js/filters.js');
+const { filterSearch, inDecade, yearOf, newsMatches, pickTrailer } = await import('../js/filters.js');
 let bad = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) bad++; };
 const items = [
@@ -19,4 +19,9 @@ ok(items[0].id === 1 && items.length === 5, 'does not mutate input');
 const n = { title: 'Netflix renews hit', summary: 'Streaming news' };
 ok(newsMatches(n, 'all') && newsMatches(n, 'netflix') && !newsMatches(n, 'disney'), 'news chip matching by keyword');
 ok(newsMatches({ title: 'HBO Max price', summary: '' }, 'max') && newsMatches({ title: 'x', summary: 'Disney+ bundle' }, 'disney'), 'news keywords: HBO/Max, Disney+');
+const vids = [{ site: 'Vimeo', type: 'Trailer', key: 'vimeo12345' }, { site: 'YouTube', type: 'Teaser', key: 'teaser_0001', official: true },
+  { site: 'YouTube', type: 'Trailer', key: 'unoff_00001', official: false }, { site: 'YouTube', type: 'Trailer', key: 'official_001', official: true }];
+ok(pickTrailer(vids) === 'official_001', 'pickTrailer prefers official YouTube trailer');
+ok(pickTrailer(vids.slice(0, 2)) === 'teaser_0001' && pickTrailer(vids.slice(0, 1)) === null && pickTrailer(undefined) === null, 'pickTrailer falls back to teaser; ignores non-YouTube; null-safe');
+ok(pickTrailer([{ site: 'YouTube', type: 'Trailer', key: '"><script>' }]) === null, 'pickTrailer rejects unsafe keys');
 process.exit(bad ? 1 : 0);

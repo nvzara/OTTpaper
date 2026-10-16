@@ -25,6 +25,7 @@
 
 ## Iteration log
 - v1: newspaper theme, masthead, The Wire, attribution doc, roadmap.
+- v12: trailer link + recommendations on title pages (extra data via append_to_response; no new requests).
 - v11: contrast test (48 checks, all themes pass), friendly offline/429 errors. Deploy 16 green.
 - v10: search suggestions (datalist from recent searches), skip link, print edition of clippings. Deploy 15 green.
 - v9: search decade/sort filters (js/filters.js), news per-service chips; search re-render keeps availability badges. Deploy 14 green.

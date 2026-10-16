@@ -33,7 +33,7 @@ await page.route('https://api.themoviedb.org/**', r => {
   else if (u.includes('/watch/providers')) j = { results: { KR: { link: 'https://tmdb/x',
     flatrate: [{ provider_name: 'Netflix', display_priority: 1 }, { provider_name: 'Wavve', display_priority: 2 }],
     rent: [{ provider_name: 'Google Play Movies', display_priority: 3 }] } } };
-  else if (u.includes('/movie/1?')) j = { id: 1, title: '테스트', overview: '줄거리', genres: [], vote_average: 7.5, runtime: 100, release_date: '2020-01-01', credits: { cast: [{ name: '배우' }] } };
+  else if (u.includes('/movie/1?')) j = { id: 1, title: '테스트', overview: '줄거리', genres: [], vote_average: 7.5, runtime: 100, release_date: '2020-01-01', credits: { cast: [{ name: '배우' }] }, recommendations: { results: [{ id: 2, title: 'Rec Film', release_date: '2021-01-01' }] }, videos: { results: [{ site: 'YouTube', type: 'Trailer', key: 'abcDEF12345', official: true }] } };
   r.fulfill({ json: j });
 });
 await page.route(/image\.tmdb\.org/, r => r.fulfill({ status: 204 }));
@@ -75,6 +75,8 @@ ok((await page.locator('.pill.mine').allInnerTexts()).join().includes('Wavve'), 
 ok((await page.locator('#prov .pill').first().innerText()).includes('Wavve'), 'my OTT sorted first');
 await page.click('[data-k=rent]');
 ok(await page.locator('#prov .pill').count() === 1, 'type filter works');
+ok((await page.getAttribute('a:has-text("trailer")', 'href')) === 'https://www.youtube.com/watch?v=abcDEF12345' && (await page.getAttribute('a:has-text("trailer")', 'rel')).includes('noopener'), 'detail: trailer link (YouTube, opens safely)');
+ok(await page.locator('.recs .card').count() === 1 && (await page.locator('.recs .card .t').innerText()) === 'Rec Film', 'detail: recommendations grid');
 ok(await page.locator('.ww').count() === 1 && await page.locator('.ww tr.cur').count() === 1, 'worldwide availability table lists the current country');
 
 // detail layout: poster placeholder must stay inside its column

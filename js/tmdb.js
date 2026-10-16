@@ -46,7 +46,7 @@ export const popular = t => api(`/${t}/popular`, { region: getSettings().country
 export const upcoming = () => api('/movie/upcoming', { region: getSettings().country }, DAY);
 export const search = (q, page = 1) => api('/search/multi', { query: q, page }, DAY / 4);
 export const detail = (type, id) =>
-  api(`/${type}/${id}`, { append_to_response: 'credits,release_dates,content_ratings' }, 7 * DAY);
+  api(`/${type}/${id}`, { append_to_response: 'credits,release_dates,content_ratings,recommendations,videos', include_video_language: `${tmdbLang().slice(0, 2)},en,null` }, 7 * DAY);
 export const providers = (type, id) => api(`/${type}/${id}/watch/providers`, {}, 3 * DAY);
 // English overview, used when a title has no overview in the selected language.
 export const overviewEn = async (type, id) => (await api(`/${type}/${id}`, { language: 'en-US' }, 7 * DAY)).overview || '';

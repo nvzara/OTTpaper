@@ -6,7 +6,7 @@ import {
   clippings, forgetApiKey, buildBackup, restoreBackup, clearUserData, requestPersistence,
 } from './store.js';
 import { computeCoverage, onMyServices, worldwideRows, pickLead } from './advisor.js';
-import { DECADES, SORTS, filterSearch, NEWS_SERVICES, newsMatches } from './filters.js';
+import { DECADES, SORTS, filterSearch, NEWS_SERVICES, newsMatches, pickTrailer } from './filters.js';
 import { MOODS, LENGTHS, resolveProviderIds, buildDiscoverParams, pickOne } from './tonight.js';
 import { t, getLang, LANGS, countryName } from './i18n.js';
 
@@ -313,10 +313,12 @@ async function detailView(type, id) {
     const meta = [typeLabel(type), (d.release_date || d.first_air_date || '').slice(0, 4), cert, run ? t('min', run) : '',
       type === 'tv' ? t('seasons', d.number_of_seasons, d.number_of_episodes) : '', d.status].filter(Boolean).map(esc).join(' · ');
     const pr = pv.results?.[s.country];
+    const trailerKey = pickTrailer(d.videos?.results);
+    const recs = (d.recommendations?.results || []).filter(x => x.id !== d.id).slice(0, 12).map(x => ({ ...x, media_type: type }));
     const clip = { id: d.id, media_type: type, title, poster_path: d.poster_path, release_date: d.release_date, first_air_date: d.first_air_date };
     $app.innerHTML = `<div class="detail"><div class="p">${poster(d.poster_path, 'w500')}</div><div>
       <h1>${esc(title)}</h1>
-      <p class="actions"><button class="btn" id="clip"></button></p>
+      <p class="actions"><button class="btn" id="clip"></button>${trailerKey ? `<a class="btn" href="https://www.youtube.com/watch?v=${encodeURIComponent(trailerKey)}" target="_blank" rel="noopener noreferrer">${I.external()} ${t('trailer')}</a>` : ''}</p>
       <div class="meta">${d.vote_average ? `<span class="score inline">${I.star()}${d.vote_average.toFixed(1)}</span> ` : ''}${meta}</div>
       <p class="meta">${esc((d.genres || []).map(g => g.name).join(', '))}</p>
       <p>${esc(d.overview) || `<span class="note">${t('no_overview')}</span>`}</p>
@@ -327,7 +329,7 @@ async function detailView(type, id) {
       <div class="prov" id="prov">${provHtml(pr, s)}</div>
       <p class="note">${I.check()} ${t('mine_note')}</p>
       ${worldwideHtml(pv.results)}
-      </div></div>`;
+      </div></div>${recs.length ? `<section class="recs"><h2 class="sec">${I.sparkle()} ${t('similar')}</h2>${grid(recs)}</section>` : ''}`;
     const paintClip = () => { const on = clippings.has(clip); $('#clip').innerHTML = I.bookmark(on) + ' ' + t(on ? 'clip_saved' : 'clip_add'); $('#clip').setAttribute('aria-pressed', on); };
     paintClip();
     $('#clip').onclick = () => { toast(t(clippings.toggle(clip) ? 'clip_added' : 'clip_removed')); paintClip(); };
