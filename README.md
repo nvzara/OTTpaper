@@ -2,7 +2,7 @@
 
 ## Overview
 
-CApaper is a personal, serverless web app for searching streaming (OTT) titles. Search a movie or TV show and see
+OTTpaper is a personal, serverless web app for searching streaming (OTT) titles. Search a movie or TV show and see
 which services offer it in your country (subscription / free / ad-supported / rent / buy). Hosted as a static site
 on GitHub Pages.
 

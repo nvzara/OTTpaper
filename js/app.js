@@ -38,7 +38,7 @@ function errView(e) {
 
 // ---- Home ----
 const ABOUT = `<details class="about"><summary>About this site</summary>
-  <p><b>CApaper</b> is a personal search tool for streaming (OTT) titles. Search for a movie or TV show and see
+  <p><b>OTTpaper</b> is a personal search tool for streaming (OTT) titles. Search for a movie or TV show and see
   which services offer it in your country, grouped by subscription, free, ad-supported, rent and buy.</p>
   <p><b>Bring your own token:</b> this site has no server and ships no API key. On your first visit, open
   <a href="#/settings">Settings</a> and enter your own free <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">TMDB API key or read-access token</a>.

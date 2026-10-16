@@ -1,4 +1,4 @@
-# CApaper 개발 계획 (웹 / GitHub Pages)
+# OTTpaper 개발 계획 (웹 / GitHub Pages)
 
 원안: 안드로이드 앱 계획서(OTT 허브). 개인 사용 + GitHub Pages 무료 호스팅에 맞춰 조정했다.
 
