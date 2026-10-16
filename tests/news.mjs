@@ -16,4 +16,10 @@ const atom = `<feed><entry><title>Atom one</title><link rel="alternate" href="ht
 ok(parseFeed(atom)[0]?.link === 'https://ex.com/b', 'parses Atom href links');
 ok(clip('word '.repeat(100), 50).length <= 50, 'clip limits excerpt length');
 ok(text('<script>x</script>a') === 'x a' || text('<b>a</b>') === 'a', 'text() strips tags');
+// feeds.json sanity: https only, named, unique, with a homepage for attribution
+import { readFile } from 'node:fs/promises';
+const cfg = JSON.parse(await readFile(new URL('../news/feeds.json', import.meta.url), 'utf8'));
+ok(cfg.feeds.length >= 4 && cfg.feeds.every(f => /^https:\/\//.test(f.url) && /^https:\/\//.test(f.home) && f.name && f.lang), 'feeds.json: every feed is https with name, home and lang');
+ok(new Set(cfg.feeds.map(f => f.url)).size === cfg.feeds.length, 'feeds.json: no duplicate feed URLs');
+ok(Array.isArray(cfg.keywords) && cfg.keywords.length > 5, 'feeds.json: OTT keyword list present');
 process.exit(bad ? 1 : 0);

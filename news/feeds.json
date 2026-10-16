@@ -1,10 +1,67 @@
 {
   "_note": "Only headline, a short excerpt (<=220 chars) and a link back are published. Article text stays with the publisher. Add a feed only if its terms allow headline syndication.",
   "feeds": [
-    { "name": "Variety", "url": "https://variety.com/feed/", "home": "https://variety.com/", "lang": "en" },
-    { "name": "Deadline", "url": "https://deadline.com/feed/", "home": "https://deadline.com/", "lang": "en" },
-    { "name": "The Hollywood Reporter", "url": "https://www.hollywoodreporter.com/feed/", "home": "https://www.hollywoodreporter.com/", "lang": "en" },
-    { "name": "The Verge – Entertainment", "url": "https://www.theverge.com/rss/entertainment/index.xml", "home": "https://www.theverge.com/entertainment", "lang": "en" }
+    {
+      "name": "Variety",
+      "url": "https://variety.com/feed/",
+      "home": "https://variety.com/",
+      "lang": "en"
+    },
+    {
+      "name": "Deadline",
+      "url": "https://deadline.com/feed/",
+      "home": "https://deadline.com/",
+      "lang": "en"
+    },
+    {
+      "name": "The Hollywood Reporter",
+      "url": "https://www.hollywoodreporter.com/feed/",
+      "home": "https://www.hollywoodreporter.com/",
+      "lang": "en"
+    },
+    {
+      "name": "The Verge – Entertainment",
+      "url": "https://www.theverge.com/rss/entertainment/index.xml",
+      "home": "https://www.theverge.com/entertainment",
+      "lang": "en"
+    },
+    {
+      "name": "Variety – TV",
+      "url": "https://variety.com/v/tv/feed/",
+      "home": "https://variety.com/v/tv/",
+      "lang": "en"
+    },
+    {
+      "name": "Deadline – TV",
+      "url": "https://deadline.com/category/tv/feed/",
+      "home": "https://deadline.com/category/tv/",
+      "lang": "en"
+    },
+    {
+      "name": "The Hollywood Reporter – TV",
+      "url": "https://www.hollywoodreporter.com/c/tv/feed/",
+      "home": "https://www.hollywoodreporter.com/c/tv/",
+      "lang": "en"
+    }
   ],
-  "keywords": ["netflix", "disney+", "disney plus", "hbo", "max ", "hulu", "prime video", "apple tv", "paramount+", "peacock", "streaming", "streamer", "crunchyroll", "wavve", "tving", "watcha", "coupang play", "ott "]
+  "keywords": [
+    "netflix",
+    "disney+",
+    "disney plus",
+    "hbo",
+    "max ",
+    "hulu",
+    "prime video",
+    "apple tv",
+    "paramount+",
+    "peacock",
+    "streaming",
+    "streamer",
+    "crunchyroll",
+    "wavve",
+    "tving",
+    "watcha",
+    "coupang play",
+    "ott "
+  ]
 }
