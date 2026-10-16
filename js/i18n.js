@@ -1,0 +1,160 @@
+// UI translations (ko / en / ja) and language resolution.
+// Default: follow the browser language (ko/en/ja), otherwise English. User choice in Settings overrides.
+import { getSettings } from './store.js';
+
+export const LANGS = { en: 'English', ko: '한국어', ja: '日本語' };
+export const TMDB_LANG = { en: 'en-US', ko: 'ko-KR', ja: 'ja-JP' };
+
+export function getLang() {
+  const pref = getSettings().lang;
+  if (pref in LANGS) return pref;
+  for (const l of navigator.languages?.length ? navigator.languages : [navigator.language]) {
+    const p = String(l || '').slice(0, 2).toLowerCase();
+    if (p in LANGS) return p;
+  }
+  return 'en';
+}
+
+const TMDB = 'https://www.themoviedb.org/', JW = 'https://www.justwatch.com/';
+const A = (u, s) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${s}</a>`;
+
+export const D = {
+  en: {
+    nav_home: 'Home', nav_settings: 'Settings', search_ph: 'Search movies & TV shows',
+    tab_trending: 'Trending', tab_movie: 'Popular movies', tab_tv: 'Popular TV', tab_upcoming: 'Upcoming',
+    recent_views: 'Recently viewed', recent_searches: 'Recent searches', no_history: 'No search history yet.',
+    no_results: 'No results.', loading: 'Loading…', searching: 'Searching…',
+    search_results: q => `Results for “${q}”`, movies: 'Movies', tv: 'TV',
+    type_movie: 'Movie', type_tv: 'TV', k_all: 'All', k_flatrate: 'Subscription', k_free: 'Free', k_ads: 'With ads', k_rent: 'Rent', k_buy: 'Buy',
+    where: c => `Where to watch (${c})`, no_prov_country: 'No availability data for this country.', no_prov_kind: 'No providers of this type.',
+    tmdb_page: 'See title-specific links on TMDB', jw_credit: '(provided by JustWatch)',
+    mine_note: 'Green = your services from Settings. Availability comes from JustWatch, may be inaccurate or change, and your subscriptions are not checked.',
+    no_overview: 'No overview available.', cast: 'Cast', min: n => `${n} min`, seasons: (s, e) => `${s} seasons · ${e} episodes`,
+    err_nokey: 'A TMDB API key is required.', err_badkey: 'The API key is not valid.',
+    err_open: 'Please enter it in', err_open2: '.', err_load: m => `Could not load data (${m}). Please try again later.`, bad_url: 'Invalid address.',
+    settings: 'Settings', api_title: 'TMDB API key', api_label: 'API key or v4 read token', api_ph: 'Paste here',
+    api_note: 'Your key is stored only in this browser and is used only for requests to TMDB.', get_key: 'Get a free key from TMDB',
+    country_title: 'Country', country_label: 'Country for availability info',
+    ott_title: 'My streaming services', ott_note: 'Services you pick are shown first on title pages.',
+    theme_title: 'Theme', theme_auto: 'System', theme_light: 'Light', theme_dark: 'Dark',
+    lang_title: 'Language', lang_label: 'Interface and content language', lang_auto: 'Browser default',
+    lang_disclaimer: 'Translations may contain awkward or incorrect expressions. Thank you for your understanding.',
+    save: 'Save', saved: 'Saved.', need_key: 'Please enter your API key.',
+    backup_title: 'Backup & restore', backup_note: 'Clearing browser data can erase your settings. Download them as a single file to keep a copy.',
+    incl_key: 'Include API key', backup_warn: 'If the file includes your API key, do not share it with anyone.',
+    backup_btn: 'Download backup', restore_btn: 'Restore from file', backed_up: 'Backup downloaded.', restored: 'Restored.',
+    bad_json: 'Not a valid JSON file.', too_big: 'The file is too large.', not_backup: 'This is not an OTTpaper backup file.',
+    clear_title: 'Delete history', clear_note: 'Deletes recent searches, viewed titles and cached data. Settings and API key are kept.',
+    clear_btn: 'Delete history & cache', clear_confirm: 'Delete search/view history and cache?', cleared: 'Deleted.',
+    credits_title: 'Credits & license',
+    cr1: `Movie/TV data and images: ${A(TMDB, 'TMDB')} — This product uses the TMDB API but is not endorsed or certified by TMDB.`,
+    cr2: `Streaming availability: ${A(JW, 'JustWatch')} (via TMDB)`,
+    cr3: 'Streaming service names and trademarks belong to their owners; no logos are used. This site is not affiliated with or endorsed by any service.',
+    cr4: 'Icons were drawn for this project. Source code is MIT licensed.',
+    w_title: 'Welcome to OTTpaper', w_sub: 'Search a movie or show and see <b>which streaming service has it</b> at a glance.',
+    w_s1: 'Get a free API key from TMDB.', w_s2: 'Enter your key, country and services below.', w_s3: 'Save — from now on the main screen opens right away.',
+    start: 'Get started', w_note: 'Settings are saved in this browser and can be changed later in Settings.',
+    notice_h: 'Free, non-commercial & private',
+    notice_p1: 'OTTpaper is a personal hobby project. It earns <b>no revenue</b>, shows <b>no ads</b>, and collects <b>no data</b> — your API key, settings and history stay in your own browser. It does not stream, host or download any video.',
+    notice_p2: `Titles, posters and metadata: ${A(TMDB, 'TMDB')}. Streaming availability: ${A(JW, 'JustWatch')} (via TMDB). All trademarks, posters and images belong to their respective owners. <em>This product uses the TMDB API but is not endorsed or certified by TMDB.</em>`,
+    f1: `This product uses the TMDB API but is not endorsed or certified by ${A(TMDB, 'TMDB')}. Streaming availability: ${A(JW, 'JustWatch')} (via TMDB).`,
+    f2: 'Free, non-commercial personal project · No ads · No data collection · Not affiliated with any streaming service. Availability may be inaccurate; subscriptions are not checked.',
+    f3: 'Translations may contain awkward or incorrect expressions. Thank you for your understanding.',
+    page_title: 'OTTpaper – Streaming search',
+  },
+  ko: {
+    nav_home: '홈', nav_settings: '설정', search_ph: '영화·드라마 제목 검색',
+    tab_trending: '트렌딩', tab_movie: '인기 영화', tab_tv: '인기 TV', tab_upcoming: '공개 예정',
+    recent_views: '최근 조회', recent_searches: '최근 검색어', no_history: '검색 기록이 없습니다.',
+    no_results: '결과가 없습니다.', loading: '불러오는 중…', searching: '검색 중…',
+    search_results: q => `“${q}” 검색 결과`, movies: '영화', tv: 'TV',
+    type_movie: '영화', type_tv: 'TV', k_all: '전체', k_flatrate: '구독', k_free: '무료', k_ads: '광고형', k_rent: '대여', k_buy: '구매',
+    where: c => `볼 수 있는 곳 (${c})`, no_prov_country: '이 국가의 제공 정보가 없습니다.', no_prov_kind: '해당 유형의 제공처가 없습니다.',
+    tmdb_page: 'TMDB 시청 페이지에서 작품별 링크 보기', jw_credit: '(JustWatch 제공)',
+    mine_note: '초록색은 설정에서 고른 내 OTT입니다. 제공 정보는 JustWatch 기준이며 변동·오류가 있을 수 있고, 구독 여부는 확인하지 않습니다.',
+    no_overview: '줄거리 정보가 없습니다.', cast: '출연', min: n => `${n}분`, seasons: (s, e) => `시즌 ${s} · ${e}화`,
+    err_nokey: 'TMDB API 키가 필요합니다.', err_badkey: 'API 키가 올바르지 않습니다.',
+    err_open: '', err_open2: '에서 입력해 주세요.', err_load: m => `불러오지 못했습니다 (${m}). 잠시 후 다시 시도해 주세요.`, bad_url: '잘못된 주소입니다.',
+    settings: '설정', api_title: 'TMDB API 키', api_label: 'API 키 또는 v4 읽기 토큰', api_ph: '여기에 붙여넣기',
+    api_note: '키는 이 브라우저에만 저장되며 TMDB로 요청을 보낼 때만 사용됩니다.', get_key: 'TMDB에서 무료 발급',
+    country_title: '국가', country_label: '시청 제공 정보를 볼 국가',
+    ott_title: '내 OTT', ott_note: '구독 중인 서비스를 고르면 상세 화면에서 먼저 표시됩니다.',
+    theme_title: '테마', theme_auto: '시스템', theme_light: '라이트', theme_dark: '다크',
+    lang_title: '언어', lang_label: '화면 및 콘텐츠 언어', lang_auto: '브라우저 설정 따르기',
+    lang_disclaimer: '번역에 어색하거나 잘못된 표현이 있을 수 있습니다. 양해 부탁드립니다.',
+    save: '저장', saved: '저장했습니다.', need_key: 'API 키를 입력해 주세요.',
+    backup_title: '백업 / 복원', backup_note: '브라우저 데이터를 지우면 설정이 사라질 수 있어요. 설정과 기록을 파일 하나로 내려받아 보관하세요.',
+    incl_key: 'API 키 포함', backup_warn: '백업 파일에 API 키가 들어가면 파일을 타인과 공유하지 마세요.',
+    backup_btn: '백업 파일 받기', restore_btn: '백업 파일 불러오기', backed_up: '백업 파일을 내려받았습니다.', restored: '복원했습니다.',
+    bad_json: '올바른 JSON 파일이 아닙니다.', too_big: '파일이 너무 큽니다.', not_backup: 'OTTpaper 백업 파일이 아닙니다.',
+    clear_title: '기록 삭제', clear_note: '최근 검색·조회 기록과 캐시를 지웁니다. 설정과 API 키는 유지됩니다.',
+    clear_btn: '기록·캐시 삭제', clear_confirm: '검색·조회 기록과 캐시를 삭제할까요?', cleared: '삭제했습니다.',
+    credits_title: '출처 및 라이선스',
+    cr1: `영화·TV 정보와 이미지: ${A(TMDB, 'TMDB')} — This product uses the TMDB API but is not endorsed or certified by TMDB.`,
+    cr2: `시청 제공 정보: ${A(JW, 'JustWatch')} (TMDB 경유)`,
+    cr3: 'OTT 이름·상표는 각 소유자의 것이며 로고는 사용하지 않습니다. 이 사이트는 어느 서비스와도 제휴·후원 관계가 아닙니다.',
+    cr4: '아이콘은 이 프로젝트를 위해 직접 그렸습니다. 소스 코드는 MIT 라이선스입니다.',
+    w_title: 'OTTpaper에 오신 것을 환영합니다', w_sub: '영화·드라마를 검색하면 <b>어느 OTT에서 볼 수 있는지</b> 한눈에 보여 드려요.',
+    w_s1: 'TMDB에서 무료 API 키를 발급받아요.', w_s2: '아래에 키와 국가, 내 OTT를 입력해요.', w_s3: '저장하면 끝! 다음부터는 바로 메인 화면이 열려요.',
+    start: '시작하기', w_note: '설정은 이 브라우저에 저장되고 나중에 설정 화면에서 바꿀 수 있어요.',
+    notice_h: '무료 · 비영리 · 개인정보 비수집',
+    notice_p1: 'OTTpaper는 개인 취미 프로젝트입니다. <b>수익이 없고</b>, <b>광고도 없으며</b>, <b>데이터를 수집하지 않습니다</b>. API 키·설정·기록은 내 브라우저에만 남습니다. 영상을 재생·호스팅·다운로드하지 않습니다.',
+    notice_p2: `작품 정보·포스터: ${A(TMDB, 'TMDB')}. 시청 제공 정보: ${A(JW, 'JustWatch')} (TMDB 경유). 모든 상표·포스터·이미지의 권리는 각 소유자에게 있습니다. <em>This product uses the TMDB API but is not endorsed or certified by TMDB.</em>`,
+    f1: `This product uses the TMDB API but is not endorsed or certified by ${A(TMDB, 'TMDB')}. 시청 제공 정보: ${A(JW, 'JustWatch')} (TMDB 경유).`,
+    f2: '무료·비영리 개인 프로젝트 · 광고 없음 · 데이터 수집 없음 · 어떤 스트리밍 서비스와도 제휴 없음. 제공 정보는 부정확할 수 있으며 구독 여부는 확인하지 않습니다.',
+    f3: '번역에 어색하거나 잘못된 표현이 있을 수 있습니다. 양해 부탁드립니다.',
+    page_title: 'OTTpaper – OTT 통합 검색',
+  },
+  ja: {
+    nav_home: 'ホーム', nav_settings: '設定', search_ph: '映画・ドラマを検索',
+    tab_trending: 'トレンド', tab_movie: '人気映画', tab_tv: '人気TV', tab_upcoming: '公開予定',
+    recent_views: '最近見た作品', recent_searches: '最近の検索', no_history: '検索履歴はありません。',
+    no_results: '結果がありません。', loading: '読み込み中…', searching: '検索中…',
+    search_results: q => `「${q}」の検索結果`, movies: '映画', tv: 'TV',
+    type_movie: '映画', type_tv: 'TV', k_all: 'すべて', k_flatrate: '見放題', k_free: '無料', k_ads: '広告付き', k_rent: 'レンタル', k_buy: '購入',
+    where: c => `視聴できる場所（${c}）`, no_prov_country: 'この国の配信情報はありません。', no_prov_kind: 'この種類の配信先はありません。',
+    tmdb_page: 'TMDBで作品ごとのリンクを見る', jw_credit: '（JustWatch提供）',
+    mine_note: '緑色は設定で選んだ自分のサービスです。配信情報はJustWatchによるもので、誤りや変更がある場合があり、契約状況は確認しません。',
+    no_overview: 'あらすじ情報がありません。', cast: '出演', min: n => `${n}分`, seasons: (s, e) => `シーズン${s} · 全${e}話`,
+    err_nokey: 'TMDB APIキーが必要です。', err_badkey: 'APIキーが正しくありません。',
+    err_open: '', err_open2: 'で入力してください。', err_load: m => `読み込めませんでした（${m}）。しばらくしてからお試しください。`, bad_url: '不正なアドレスです。',
+    settings: '設定', api_title: 'TMDB APIキー', api_label: 'APIキーまたはv4読み取りトークン', api_ph: 'ここに貼り付け',
+    api_note: 'キーはこのブラウザにのみ保存され、TMDBへのリクエストにのみ使用されます。', get_key: 'TMDBで無料取得',
+    country_title: '国', country_label: '配信情報を表示する国',
+    ott_title: '利用中のサービス', ott_note: '選んだサービスは作品ページで先に表示されます。',
+    theme_title: 'テーマ', theme_auto: 'システム', theme_light: 'ライト', theme_dark: 'ダーク',
+    lang_title: '言語', lang_label: '画面とコンテンツの言語', lang_auto: 'ブラウザの設定に従う',
+    lang_disclaimer: '翻訳に不自然または誤った表現が含まれる場合があります。ご了承ください。',
+    save: '保存', saved: '保存しました。', need_key: 'APIキーを入力してください。',
+    backup_title: 'バックアップ / 復元', backup_note: 'ブラウザのデータを消去すると設定が失われることがあります。設定を1つのファイルとして保存しておきましょう。',
+    incl_key: 'APIキーを含める', backup_warn: 'ファイルにAPIキーが含まれる場合は、他人と共有しないでください。',
+    backup_btn: 'バックアップを保存', restore_btn: 'ファイルから復元', backed_up: 'バックアップを保存しました。', restored: '復元しました。',
+    bad_json: '有効なJSONファイルではありません。', too_big: 'ファイルが大きすぎます。', not_backup: 'OTTpaperのバックアップファイルではありません。',
+    clear_title: '履歴の削除', clear_note: '最近の検索・閲覧履歴とキャッシュを削除します。設定とAPIキーは保持されます。',
+    clear_btn: '履歴とキャッシュを削除', clear_confirm: '検索・閲覧履歴とキャッシュを削除しますか？', cleared: '削除しました。',
+    credits_title: 'クレジットとライセンス',
+    cr1: `映画・TVの情報と画像: ${A(TMDB, 'TMDB')} — This product uses the TMDB API but is not endorsed or certified by TMDB.`,
+    cr2: `配信情報: ${A(JW, 'JustWatch')}（TMDB経由）`,
+    cr3: '配信サービス名と商標はそれぞれの所有者に帰属し、ロゴは使用していません。本サイトはいかなるサービスとも提携・承認関係にありません。',
+    cr4: 'アイコンはこのプロジェクトのために描き下ろしました。ソースコードはMITライセンスです。',
+    w_title: 'OTTpaperへようこそ', w_sub: '映画やドラマを検索すると、<b>どの配信サービスで観られるか</b>がひと目で分かります。',
+    w_s1: 'TMDBで無料のAPIキーを取得します。', w_s2: '下にキー・国・利用サービスを入力します。', w_s3: '保存すれば完了。次回からはすぐにメイン画面が開きます。',
+    start: 'はじめる', w_note: '設定はこのブラウザに保存され、後で設定画面から変更できます。',
+    notice_h: '無料・非営利・個人情報の収集なし',
+    notice_p1: 'OTTpaperは個人の趣味のプロジェクトです。<b>収益はなく</b>、<b>広告も表示せず</b>、<b>データを収集しません</b>。APIキー・設定・履歴はお使いのブラウザにのみ保存されます。動画の再生・ホスティング・ダウンロードは行いません。',
+    notice_p2: `作品情報・ポスター: ${A(TMDB, 'TMDB')}。配信情報: ${A(JW, 'JustWatch')}（TMDB経由）。すべての商標・ポスター・画像の権利はそれぞれの所有者に帰属します。<em>This product uses the TMDB API but is not endorsed or certified by TMDB.</em>`,
+    f1: `This product uses the TMDB API but is not endorsed or certified by ${A(TMDB, 'TMDB')}. 配信情報: ${A(JW, 'JustWatch')}（TMDB経由）。`,
+    f2: '無料・非営利の個人プロジェクト · 広告なし · データ収集なし · いかなる配信サービスとも提携なし。配信情報は不正確な場合があり、契約状況は確認しません。',
+    f3: '翻訳に不自然または誤った表現が含まれる場合があります。ご了承ください。',
+    page_title: 'OTTpaper – 配信作品検索',
+  },
+};
+
+export function t(key, ...args) {
+  const v = D[getLang()][key] ?? D.en[key] ?? key;
+  return typeof v === 'function' ? v(...args) : v;
+}
+export const tmdbLang = () => TMDB_LANG[getLang()];
+export const countryName = code => {
+  try { return new Intl.DisplayNames([getLang()], { type: 'region' }).of(code) || code; } catch { return code; }
+};

@@ -1,5 +1,6 @@
 // TMDB v3 client with localStorage TTL cache. Key comes from user settings (never committed).
 import { getSettings } from './store.js';
+import { tmdbLang } from './i18n.js';
 
 const BASE = 'https://api.themoviedb.org/3';
 export const IMG = 'https://image.tmdb.org/t/p/';
@@ -24,11 +25,11 @@ function cacheSet(k, d, ttl) {
 async function api(path, params = {}, ttl = DAY) {
   const { apiKey } = getSettings();
   if (!apiKey) throw new Error('NO_KEY');
-  const p = new URLSearchParams({ language: 'ko-KR', ...params });
+  const p = new URLSearchParams({ language: tmdbLang(), ...params });
   const headers = {};
   if (apiKey.length > 40) headers.Authorization = 'Bearer ' + apiKey; // v4 read token
   else p.set('api_key', apiKey);
-  const ck = path + '?' + new URLSearchParams({ language: 'ko-KR', ...params });
+  const ck = path + '?' + new URLSearchParams({ language: tmdbLang(), ...params });
   const hit = cacheGet(ck);
   if (hit) return hit;
   const r = await fetch(`${BASE}${path}?${p}`, { headers });
@@ -46,3 +47,5 @@ export const search = (q, page = 1) => api('/search/multi', { query: q, page }, 
 export const detail = (type, id) =>
   api(`/${type}/${id}`, { append_to_response: 'credits,release_dates,content_ratings' }, 7 * DAY);
 export const providers = (type, id) => api(`/${type}/${id}/watch/providers`, {}, 3 * DAY);
+// English overview, used when a title has no overview in the selected language.
+export const overviewEn = async (type, id) => (await api(`/${type}/${id}`, { language: 'en-US' }, 7 * DAY)).overview || '';

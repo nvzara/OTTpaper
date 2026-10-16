@@ -31,21 +31,24 @@ index.html        page shell (header, footer with attributions)
 css/style.css     all styles (light/dark themes via CSS variables)
 js/app.js         router + views (welcome, home, search, detail, settings)
 js/tmdb.js        TMDB API client + localStorage cache
+js/i18n.js        UI translations (en/ko/ja) + language detection
 js/store.js       settings, history, backup/restore (validated), OTT/country lists
 js/icons.js       original inline SVG icons (no third-party icon set)
 docs/PLAN.md      development plan
 tests/smoke.mjs   browser smoke test with a mocked TMDB API
+tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 ```
 
 ## Features
 
 - First visit: welcome screen guides you through entering your own TMDB key, country and your OTT services; later visits open the main screen directly.
 - Settings can be changed anytime; everything is stored in your browser only.
+- Languages: English / 한국어 / 日本語. Defaults to the browser language (English if unsupported); can be changed in Settings. Titles, overviews and cast info are requested from TMDB in the selected language (English overview as fallback). Translations may contain awkward expressions.
 - Backup/restore: download all settings (optionally including the API key) as one JSON file and restore it later.
 
 ## Tests
 
-Run before every push: `NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
+Run before every push: `node tests/i18n.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
 
 ## License
 

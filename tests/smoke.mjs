@@ -101,7 +101,7 @@ await page.waitForSelector('#file', { state: 'attached' });
 await page.setInputFiles('#file', await dl.path());
 await page.waitForFunction(() => JSON.parse(localStorage.getItem('settings') || '{}').apiKey === 'test-key');
 const restored = await page.evaluate(() => JSON.parse(localStorage.getItem('settings')));
-ok(restored.country === 'US' && restored.onboarded === true && restored.myOtts.includes('wavve'), 'restore brings settings back');
+ok(restored.country === 'US' && restored.lang === 'auto' && restored.onboarded === true && restored.myOtts.includes('wavve'), 'restore brings settings back');
 await page.goto(base + '/#/');
 await page.reload(); await page.waitForSelector('.card');
 ok(true, 'after restore, home opens directly');
@@ -121,6 +121,59 @@ ok(await page.evaluate(() => !!JSON.parse(localStorage.getItem('settings')).apiK
 await page.setViewportSize({ width: 375, height: 700 });
 await page.goto(base + '/#/'); await page.waitForSelector('.card');
 ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'no horizontal scroll on mobile');
+
+
+// 12. languages: browser default, manual choice, TMDB request language, overview fallback
+async function langCase(locale, fn) {
+  const c = await browser.newContext({ locale });
+  const pg = await c.newPage();
+  const reqs = [];
+  pg.on('pageerror', e => errors.push(e.message));
+  pg.on('request', r => { if (r.url().includes('api.themoviedb.org')) reqs.push(r.url()); });
+  await pg.route(/image\.tmdb\.org/, r => r.fulfill({ status: 204 }));
+  await pg.route('https://api.themoviedb.org/**', r => {
+    const u = r.request().url();
+    let j = { results: [{ id: 1, media_type: 'movie', title: 'T', poster_path: null, release_date: '2020-01-01' }] };
+    if (u.includes('/watch/providers')) j = { results: {} };
+    else if (u.includes('/movie/1?')) j = { id: 1, title: 'T', overview: u.includes('language=en-US') ? 'English fallback overview' : '', genres: [], release_date: '2020-01-01' };
+    r.fulfill({ json: j });
+  });
+  await fn(pg, reqs, c);
+  await c.close();
+}
+await langCase('ko-KR', async pg => {
+  await pg.goto(base + '/'); await pg.waitForSelector('.welcome');
+  ok((await pg.locator('.welcome h1').innerText()).includes('환영'), 'ko browser -> Korean UI');
+  ok(await pg.evaluate(() => document.documentElement.lang) === 'ko', 'html lang=ko');
+});
+await langCase('fr-FR', async pg => {
+  await pg.goto(base + '/'); await pg.waitForSelector('.welcome');
+  ok(await pg.locator('.welcome h1').innerText() === 'Welcome to OTTpaper', 'unsupported browser language -> English');
+});
+await langCase('ja-JP', async pg => {
+  await pg.goto(base + '/'); await pg.waitForSelector('.welcome');
+  ok((await pg.locator('.welcome h1').innerText()).includes('ようこそ'), 'ja browser -> Japanese UI');
+  ok((await pg.locator('.attrib').innerText()).includes('ご了承'), 'footer shows translation disclaimer (ja)');
+});
+await langCase('en-US', async (pg, reqs) => {
+  await pg.goto(base + '/'); await pg.waitForSelector('.welcome');
+  await pg.fill('#key', 'typed-key');
+  await pg.selectOption('#lang', 'ja');
+  await pg.waitForFunction(() => document.querySelector('.welcome h1')?.textContent.includes('ようこそ'));
+  ok(await pg.inputValue('#key') === 'typed-key', 'language change keeps typed API key');
+  ok(await pg.evaluate(() => document.title.includes('配信')), 'document title translated');
+  await pg.click('#start'); await pg.waitForSelector('.card');
+  ok(reqs.some(u => u.includes('language=ja-JP')), 'content requested in ja-JP');
+  await pg.click('.card'); await pg.waitForSelector('.detail');
+  await pg.waitForFunction(() => document.body.textContent.includes('English fallback overview'));
+  ok(true, 'missing overview falls back to English');
+  await pg.click('#navSet'); await pg.waitForSelector('#lang');
+  await pg.selectOption('#lang', 'ko');
+  await pg.waitForFunction(() => document.querySelector('h1')?.textContent.includes('설정'));
+  ok(await pg.evaluate(() => JSON.parse(localStorage.getItem('settings')).lang) === 'ko', 'chosen language persisted');
+  await pg.reload(); await pg.waitForSelector('#lang');
+  ok((await pg.locator('h1').innerText()).includes('설정'), 'language kept after reload');
+});
 
 ok(errors.length === 0, 'no JS errors' + (errors.length ? ': ' + errors.join('; ') : ''));
 await browser.close(); server.close();

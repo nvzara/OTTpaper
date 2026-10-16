@@ -3,17 +3,20 @@ const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; }
 const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
 
 export const OTTS = [
-  { key: 'netflix', name: '넷플릭스', url: 'https://www.netflix.com/' },
-  { key: 'disney', name: '디즈니+', url: 'https://www.disneyplus.com/' },
-  { key: 'wavve', name: '웨이브', url: 'https://www.wavve.com/' },
-  { key: 'tving', name: '티빙', url: 'https://www.tving.com/' },
-  { key: 'watcha', name: '왓챠', url: 'https://watcha.com/' },
-  { key: 'coupang', name: '쿠팡플레이', url: 'https://www.coupangplay.com/' },
-  { key: 'apple', name: '애플 TV+', url: 'https://tv.apple.com/' },
-  { key: 'prime', name: '프라임 비디오', url: 'https://www.primevideo.com/' },
-  { key: 'youtube', name: '유튜브', url: 'https://www.youtube.com/' },
+  { key: 'netflix', name: '넷플릭스', en: 'Netflix', url: 'https://www.netflix.com/' },
+  { key: 'disney', name: '디즈니+', en: 'Disney+', url: 'https://www.disneyplus.com/' },
+  { key: 'wavve', name: '웨이브', en: 'Wavve', url: 'https://www.wavve.com/' },
+  { key: 'tving', name: '티빙', en: 'TVING', url: 'https://www.tving.com/' },
+  { key: 'watcha', name: '왓챠', en: 'Watcha', url: 'https://watcha.com/' },
+  { key: 'coupang', name: '쿠팡플레이', en: 'Coupang Play', url: 'https://www.coupangplay.com/' },
+  { key: 'apple', name: '애플 TV+', en: 'Apple TV+', url: 'https://tv.apple.com/' },
+  { key: 'prime', name: '프라임 비디오', en: 'Prime Video', url: 'https://www.primevideo.com/' },
+  { key: 'youtube', name: '유튜브', en: 'YouTube', url: 'https://www.youtube.com/' },
 ];
-export const COUNTRIES = { KR: '한국', US: '미국', JP: '일본', GB: '영국', CA: '캐나다', AU: '오스트레일리아', DE: '독일', FR: '프랑스' };
+export const COUNTRIES = ['KR', 'US', 'JP', 'GB', 'CA', 'AU', 'DE', 'FR']; // display names come from Intl.DisplayNames
+export const LANG_CODES = ['en', 'ko', 'ja'];
+// Display name of a streaming service: Korean name for ko, brand name otherwise.
+export const ottName = (o, lang) => lang === 'ko' ? o.name : o.en;
 export const THEMES = ['auto', 'light', 'dark'];
 
 // Match TMDB provider names to our keys (substring, lowercase).
@@ -24,7 +27,7 @@ export function ottKey(name) {
   return OTTS.find(o => MATCH[o.key].some(m => n.includes(m)))?.key ?? null;
 }
 
-const DEF = { apiKey: '', country: 'KR', theme: 'auto', myOtts: [], onboarded: false };
+const DEF = { apiKey: '', country: 'KR', theme: 'auto', lang: 'auto', myOtts: [], onboarded: false };
 export function getSettings() {
   const s = { ...DEF, ...get('settings', {}) };
   // Users who saved a key before the welcome screen existed are treated as onboarded.
@@ -60,13 +63,14 @@ const str = (v, max) => typeof v === 'string' ? v.slice(0, max) : '';
 // Validate and sanitize an untrusted backup file; throws on a file that is not an OTTpaper backup.
 export function restoreBackup(raw) {
   if (!raw || raw.app !== 'OTTpaper' || typeof raw.settings !== 'object' || raw.settings === null) {
-    throw new Error('OTTpaper 백업 파일이 아닙니다.');
+    throw new Error('NOT_BACKUP');
   }
   const s = raw.settings, cur = getSettings();
   const apiKey = str(s.apiKey, 200).trim();
   saveSettings({
     apiKey: apiKey || cur.apiKey, // a key-less backup keeps the key already in this browser
-    country: s.country in COUNTRIES ? s.country : cur.country,
+    country: COUNTRIES.includes(s.country) ? s.country : cur.country,
+    lang: s.lang === 'auto' || LANG_CODES.includes(s.lang) ? s.lang : cur.lang,
     theme: THEMES.includes(s.theme) ? s.theme : cur.theme,
     myOtts: Array.isArray(s.myOtts) ? s.myOtts.filter(k => OTTS.some(o => o.key === k)) : cur.myOtts,
     onboarded: true,
