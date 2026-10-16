@@ -103,7 +103,7 @@ export async function detailView(type, id) {
         <div class="art-text">${d.overview ? lede(d.overview) : `<p class="note">${t('no_overview')}</p>`}</div>
         <section class="where" aria-labelledby="whereH">
           <h2 class="where-h" id="whereH">${I.tvbox()} ${esc(t('where', cname))}</h2>
-          <div class="chips" id="kf">${['all', ...KINDS].map(k =>
+          <div class="chips" id="kf" role="group" aria-label="${esc(t('where', cname))}">${['all', ...KINDS].map(k =>
             `<button data-k="${k}" aria-pressed="${k === kindFilter}">${t('k_' + k)}</button>`).join('')}</div>
           <div class="prov" id="prov">${provHtml(pr, s)}</div>
           <p class="note">${t('mine_note')}</p>

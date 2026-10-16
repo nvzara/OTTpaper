@@ -16,6 +16,7 @@ function formHtml(s) {
       <span class="keyrow"><input id="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(s.apiKey)}" placeholder="${t('api_ph')}">
       <button type="button" class="btn" id="keyToggle">${t('key_show')}</button></span></label>
     <label class="chip"><input type="checkbox" id="remember"${s.rememberKey ? ' checked' : ''}><span>${t('key_remember')}</span></label>
+    <p class="note">${t('key_remember_off')}</p>
     <p class="note">${t('api_note')} ${t('sec_note')}</p>
     <p class="note"><a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">${t('get_key')} ${I.external()}</a></p></section>
   <section class="fs"><h2>${I.language()} ${t('lang_title')}</h2>

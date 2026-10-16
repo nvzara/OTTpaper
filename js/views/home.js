@@ -12,7 +12,7 @@ export function home() {
   const rv = recentViews.list().slice(0, 5), clips = clippings.list().length;
   const open = !noticeSeen.get();
   noticeSeen.set();
-  $app.innerHTML = `<div class="front">
+  $app.innerHTML = `<h1 class="vh">${t('nav_home')} — OTTpaper</h1><div class="front">
       <div id="lead">${skStory()}</div>
       <aside class="rail">
         ${notice(open)}
@@ -31,10 +31,12 @@ export function home() {
     <section class="listings">${sec(t('listings'))}
       <div class="tabs" role="tablist">${TABS.map(k => `<button role="tab" data-t="${k}" aria-controls="list" aria-selected="${k === homeTab}">${t('tab_' + k)}</button>`).join('')}</div>
       <div id="list" role="tabpanel"></div></section>`;
-  $app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
-    homeTab = b.dataset.t;
-    $app.querySelectorAll('[data-t]').forEach(x => x.setAttribute('aria-selected', x === b));
-    loadList();
+  const tabs = [...$app.querySelectorAll('[data-t]')];
+  const choose = b => { homeTab = b.dataset.t; tabs.forEach(x => x.setAttribute('aria-selected', x === b)); loadList(); };
+  tabs.forEach((b, i) => {
+    b.onclick = () => choose(b);
+    // Left/right arrows move between tabs (WAI-ARIA tabs pattern)
+    b.onkeydown = e => { const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key]; if (d) { e.preventDefault(); const n = tabs[(i + d + tabs.length) % tabs.length]; n.focus(); choose(n); } };
   });
   loadList();
   renderLead();

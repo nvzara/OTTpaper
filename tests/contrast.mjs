@@ -14,7 +14,7 @@ const lum = hex => { let h = hex.slice(1); if (h.length === 3) h = [...h].map(c 
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); };
 // [foreground token, background token, min ratio, where it is used]
 const PAIRS = [['ink', 'paper', 7, 'body text'], ['ink', 'paper2', 7, 'text on panels'], ['mut', 'paper', 4.5, 'secondary text'], ['mut', 'paper2', 4.5, 'secondary text on panels'],
-  ['acc', 'paper', 4.5, 'links / kickers'], ['acc', 'paper2', 4.5, 'links on panels'], ['accfg', 'acc', 4.5, 'primary button text'], ['paper', 'ink', 4.5, 'selected chips / score tags'],
+  ['acc', 'paper', 4.5, 'links / kickers'], ['acc', 'paper2', 4.5, 'links on panels'], ['accfg', 'acc', 4.5, 'primary button text'], ['paper', 'danger', 4.5, 'danger button (hover)'], ['paper', 'ink', 4.5, 'selected chips / score tags'],
   ['ok', 'okbg', 4.5, '"my service" pills'], ['ok', 'paper', 4.5, '"on my services" tag, advisor ranking'], ['paper', 'ok', 4.5, '"on my services" badge'], ['danger', 'paper2', 4.5, 'error text'], ['warn', 'paper2', 4.5, 'warning text']];
 let bad = 0;
 for (const [name, t] of Object.entries(themes)) {

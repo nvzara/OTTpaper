@@ -44,8 +44,8 @@ export const lede = text => `<p class="lede end${/^["“‘(]?[A-Za-z]/.test(tex
 
 // ---- Page furniture ----
 export const sec = (title, n) => `<h2 class="sec"><span>${title}</span>${n != null ? `<span class="n">${n}</span>` : ''}</h2>`;
-export const pageHead = ({ kicker, title, deck, extra = '' }) =>
-  `<header class="sect-head">${kicker ? `<p class="kicker">${kicker}</p>` : ''}<h1>${title}</h1>${deck ? `<p class="deck">${deck}</p>` : ''}${extra}</header>`;
+export const pageHead = ({ kicker, title, deck, extra = '', long = false }) =>
+  `<header class="sect-head">${kicker ? `<p class="kicker">${kicker}</p>` : ''}<h1${long ? ' class="long"' : ''}>${title}</h1>${deck ? `<p class="deck">${deck}</p>` : ''}${extra}</header>`;
 // Empty states read as an editor's note, not an error.
 export const empty = (msg, label = t('note_h')) => `<div class="empty"><p class="kicker">${label}</p><p>${msg}</p></div>`;
 // Loading: quiet grey type blocks (screen readers hear the loading text).

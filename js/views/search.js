@@ -24,7 +24,7 @@ export async function searchView(q) {
   }
   recentSearch.add(q, (a, b) => a === b);
   refreshSuggest();
-  $app.innerHTML = `${pageHead({ kicker: t('nav_search'), title: esc(t('search_results', q)), extra: '<p class="byline" id="count">&nbsp;</p>' })}<div id="list">${skGrid(12, t('searching'))}</div>`;
+  $app.innerHTML = `${pageHead({ kicker: t('nav_search'), title: esc(t('search_results', q)), long: q.length > 16, extra: '<p class="byline" id="count">&nbsp;</p>' })}<div id="list">${skGrid(12, t('searching'))}</div>`;
   try {
     const d = await T.search(q);
     const items = d.results.filter(x => x.media_type === 'movie' || x.media_type === 'tv');

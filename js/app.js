@@ -42,8 +42,14 @@ function route() {
   const parts = path.split('/').filter(Boolean);
   window.scrollTo(0, 0);
   document.title = t('page_title');
-  document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#/' + (parts[0] || '')));
   const first = !getSettings().onboarded;
+  document.querySelectorAll('.nav a').forEach(a => {
+    const on = a.getAttribute('href') === '#/' + (parts[0] || '');
+    a.classList.toggle('on', on);
+    if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  });
+  // Like a newspaper: the full nameplate on the front page, a compact running head on inside pages.
+  document.documentElement.dataset.page = !parts[0] || parts[0] === 'welcome' || (first && parts[0] !== 'settings') ? 'front' : 'inside';
   if (parts[0] === 'settings') settingsView();
   else if (parts[0] === 'welcome' || first) welcomeView();
   else if (parts[0] === 'search') searchView(new URLSearchParams(qs).get('q'));

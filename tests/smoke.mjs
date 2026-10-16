@@ -70,6 +70,10 @@ for (const t of ['movie', 'tv', 'upcoming', 'trending']) {
   await page.click(`[data-t=${t}]`); await page.waitForSelector('.card');
 }
 ok(true, 'all home tabs load');
+await page.focus('[data-t=trending]'); await page.keyboard.press('ArrowRight');
+ok(await page.locator('[data-t=movie][aria-selected=true]').count() === 1 && await page.evaluate(() => document.activeElement.dataset.t) === 'movie', 'listings tabs: arrow keys move and select');
+await page.click('[data-t=trending]'); await page.waitForSelector('.card');
+ok(await page.evaluate(() => document.documentElement.dataset.page) === 'front' && await page.locator('#navHome[aria-current=page]').count() === 1 && await page.locator('main h1').count() === 1, 'front page: full nameplate, current section marked, one page heading');
 
 // 4. detail + my OTT
 await page.click('.card');
@@ -83,6 +87,7 @@ ok(await page.locator('#prov .pill').count() === 1, 'type filter works');
 ok((await page.getAttribute('a:has-text("trailer")', 'href')) === 'https://www.youtube.com/watch?v=abcDEF12345' && (await page.getAttribute('a:has-text("trailer")', 'rel')).includes('noopener'), 'detail: trailer link (YouTube, opens safely)');
 ok(await page.locator('.recs .card').count() === 1 && (await page.locator('.recs .card .t').innerText()) === 'Rec Film', 'detail: recommendations grid');
 ok(await page.locator('.ww').count() === 1 && await page.locator('.ww tr.cur').count() === 1, 'worldwide availability table lists the current country');
+ok(await page.evaluate(() => document.documentElement.dataset.page) === 'inside' && await page.locator('.nav a[aria-current]').count() === 0, 'inside pages use the compact running head');
 
 // detail layout: poster placeholder must stay inside its column
 ok(await page.evaluate(() => { const n = document.querySelector('.article .photo'); return !n || n.getBoundingClientRect().width <= 270; }), 'article photo column stays narrow');
