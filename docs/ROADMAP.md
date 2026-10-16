@@ -1,0 +1,25 @@
+# OTTpaper roadmap (read by the improvement loop)
+
+**Core:** OTT unified search is the main feature — every iteration must keep search/where-to-watch fast, correct and easy.
+**Identity:** a newspaper (paper tones, serif, rules, columns) + original features that only a static GitHub Pages site can do.
+**Hard rules:** see `docs/ATTRIBUTION.md`. Keep MIT + credits correct. Run all tests before every push (`node tests/i18n.mjs && node tests/news.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs`). Keep the three languages in sync. Small, verified, well-organized changes; update README/ATTRIBUTION when behaviour or third-party use changes.
+
+## Done
+- [x] Search, detail with where-to-watch (per type, my OTT first), tabs, history
+- [x] Welcome onboarding, settings, backup/restore, en/ko/ja, content language
+- [x] Newspaper look + masthead; The Wire (news via scheduled GitHub Action → news.json)
+
+## Ideas (pick the most valuable next; reorder freely)
+1. **Clippings (watchlist)** — save titles locally, included in backup.
+2. **Best subscription for my clippings** — which of my services (or which one to add) covers the most saved titles (uses cached provider data).
+3. **Search upgrades** — filter by "on my services", type, year; suggestions; keyboard shortcut `/`; voice search (Web Speech API).
+4. **Worldwide availability** — table of every country for a title (travel/VPN-free overview).
+5. **Today's front page** — deterministic daily lead story + "what to watch tonight" picker by mood/length.
+6. **PWA** — manifest + service worker for offline front page and install.
+7. **Print edition** — print stylesheet polish ("print my clippings").
+8. **Share** — copyable deep links; Open Graph meta.
+9. **News**: verify feeds in Actions logs; add ko/ja sources only after confirming terms + URL; per-service filter chips.
+10. Accessibility pass (contrast, focus, screen-reader labels), performance pass (image sizes, lazy loading).
+
+## Iteration log
+- v1 (this commit): newspaper theme, masthead, The Wire, attribution doc, roadmap.

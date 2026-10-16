@@ -2,6 +2,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '17 */3 * * *'   # refresh the news wire every 3 hours
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,8 +21,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Build site (only public files) + fetch news
+        run: |
+          node tests/news.mjs
+          mkdir -p _site/news
+          cp -r index.html css js LICENSE _site/
+          cp news/feeds.json _site/news/ 2>/dev/null || true
+          node scripts/fetch-news.mjs _site/news/news.json
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - id: d
         uses: actions/deploy-pages@v4

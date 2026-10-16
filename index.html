@@ -10,13 +10,17 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<header class="top">
+<header class="mast">
+  <div class="mast-line"><span id="dateline"></span><span id="edition"></span></div>
   <a class="brand" href="#/">OTTpaper</a>
-  <form id="searchForm" role="search">
-    <input id="q" type="search" placeholder="영화·드라마 제목 검색" autocomplete="off" aria-label="검색">
-  </form>
-  <nav class="nav" aria-label="메뉴"><a id="navHome" href="#/"></a><a id="navSet" href="#/settings"></a></nav>
+  <p class="motto" id="motto"></p>
 </header>
+<div class="bar">
+  <form id="searchForm" role="search">
+    <input id="q" type="search" placeholder="Search" autocomplete="off" aria-label="Search">
+  </form>
+  <nav class="nav" aria-label="Menu"><a id="navHome" href="#/"></a><a id="navNews" href="#/news"></a><a id="navSet" href="#/settings"></a></nav>
+</div>
 <main id="app" tabindex="-1"></main>
 <div id="toast" role="status" aria-live="polite"></div>
 <footer class="attrib">

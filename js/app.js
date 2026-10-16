@@ -222,6 +222,24 @@ async function detailView(type, id) {
   } catch (e) { $app.innerHTML = errView(e); }
 }
 
+// ---- News wire (news.json is generated at deploy time by scripts/fetch-news.mjs) ----
+const httpUrl = u => { try { return /^https?:$/.test(new URL(u).protocol) ? u : '#'; } catch { return '#'; } };
+const fmtDate = (iso, opts) => { try { return new Intl.DateTimeFormat(getLang(), opts).format(new Date(iso)); } catch { return ''; } };
+async function newsView() {
+  $app.innerHTML = `<h1 class="page-h">${I.news()} ${t('news_title')}</h1><p class="note">${t('news_sub')}</p><div id="wire"><p class="note">${t('loading')}</p></div>
+    <p class="note">${t('news_lang')} ${t('news_attrib')}</p>`;
+  let d = null;
+  try { const r = await fetch('news/news.json', { cache: 'no-cache' }); if (r.ok) d = await r.json(); } catch {}
+  const items = Array.isArray(d?.items) ? d.items.slice(0, 60) : [];
+  $('#wire').innerHTML = !items.length ? `<div class="err">${I.info()} ${t('news_empty')}</div>` :
+    `<p class="note">${t('news_updated', fmtDate(d.generatedAt, { dateStyle: 'medium', timeStyle: 'short' }))}</p>
+    <div class="wire">${items.map((n, i) => `<article class="story${i === 0 ? ' lead' : ''}">
+      <div class="kicker">${esc(n.source)}${n.published ? ' · ' + esc(fmtDate(n.published, { dateStyle: 'medium' })) : ''}</div>
+      <h3><a href="${esc(httpUrl(n.link))}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></h3>
+      ${n.summary ? `<p>${esc(n.summary)}</p>` : ''}
+      <a class="more" href="${esc(httpUrl(n.link))}" target="_blank" rel="noopener noreferrer">${esc(t('news_read', n.source))} ${I.external()}</a></article>`).join('')}</div>`;
+}
+
 // ---- Settings ----
 function download(name, text) {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
@@ -245,7 +263,7 @@ function settingsView() {
       <p class="note">${t('clear_note')}</p>
       <p class="actions"><button class="btn danger" id="clr">${I.trash()} ${t('clear_btn')}</button></p></section>
     <section class="panel"><h2>${I.info()} ${t('credits_title')}</h2>
-      <ul class="credits"><li>${t('cr1')}</li><li>${t('cr2')}</li><li>${t('cr3')}</li><li>${t('cr4')}</li></ul></section></div>`;
+      <ul class="credits"><li>${t('cr1')}</li><li>${t('cr2')}</li><li>${t('cr3')}</li><li>${t('cr4')}</li><li>${t('cr5')}</li></ul></section></div>`;
   previewTheme(); bindLang();
   $('#save').onclick = () => {
     const f = readForm();
@@ -279,7 +297,11 @@ function applyLang() {
   document.title = t('page_title');
   $('#q').placeholder = t('search_ph');
   $('#navHome').innerHTML = I.home() + `<span>${t('nav_home')}</span>`;
+  $('#navNews').innerHTML = I.news() + `<span>${t('nav_news')}</span>`;
   $('#navSet').innerHTML = I.settings() + `<span>${t('nav_settings')}</span>`;
+  $('#dateline').textContent = fmtDate(Date.now(), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  $('#edition').textContent = t('edition');
+  $('#motto').textContent = t('motto');
   $('#f1').innerHTML = t('f1'); $('#f2').textContent = t('f2'); $('#f3').textContent = t('f3');
 }
 
@@ -294,6 +316,7 @@ function route() {
   if (parts[0] === 'settings') settingsView();
   else if (parts[0] === 'welcome' || first) welcomeView();
   else if (parts[0] === 'search') searchView(new URLSearchParams(qs).get('q'));
+  else if (parts[0] === 'news') newsView();
   else if (parts[0] === 'title') detailView(parts[1], parts[2]);
   else home();
 }
@@ -302,7 +325,6 @@ $('#searchForm').onsubmit = e => {
   const q = $('#q').value.trim();
   location.hash = '/search' + (q ? '?q=' + encodeURIComponent(q) : '');
 };
-$('.brand').insertAdjacentHTML('afterbegin', I.logo());
 $('#searchForm').insertAdjacentHTML('afterbegin', `<span class="si">${I.search()}</span>`);
 applyTheme();
 applyLang();

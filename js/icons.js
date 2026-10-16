@@ -25,5 +25,6 @@ export const I = {
   star: () => svg('<path d="m12 4 2.4 5 5.4.7-4 3.7 1 5.4-4.8-2.7L7.2 19l1-5.4-4-3.7 5.4-.7z"/>'),
   external: () => svg('<path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5"/>'),
   language: () => svg('<path d="M4 6h9M8.5 4v2M6 6c.5 3 2.5 5.5 5.5 7M12 6c-.5 3-3 6-7 7.5"/><path d="m12 20 4-9 4 9M13.5 17h5"/>'),
+  news: () => svg('<path d="M5 4h11v16H7a2 2 0 0 1-2-2z"/><path d="M16 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/>'),
   sparkle: () => svg('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>'),
 };

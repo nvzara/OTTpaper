@@ -36,6 +36,11 @@ js/store.js       settings, history, backup/restore (validated), OTT/country lis
 js/icons.js       original inline SVG icons (no third-party icon set)
 docs/PLAN.md      development plan
 tests/smoke.mjs   browser smoke test with a mocked TMDB API
+scripts/          build-time tools: fetch-news.mjs (RSS -> news.json), rss.mjs (parser)
+news/feeds.json   news sources + OTT keywords
+docs/ATTRIBUTION.md  third-party credits & licensing rules
+docs/ROADMAP.md   what's done / next
+tests/news.mjs    RSS parser unit test
 tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 ```
 
@@ -44,11 +49,13 @@ tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 - First visit: welcome screen guides you through entering your own TMDB key, country and your OTT services; later visits open the main screen directly.
 - Settings can be changed anytime; everything is stored in your browser only.
 - Languages: English / 한국어 / 日本語. Defaults to the browser language (English if unsupported); can be changed in Settings. Titles, overviews and cast info are requested from TMDB in the selected language (English overview as fallback). Translations may contain awkward expressions.
+- The Wire (News): a GitHub Action fetches public RSS feeds every 3 hours at build time and publishes `news/news.json` (headline, short excerpt and link only). Open it at `#/news`. It is empty locally and until the first deployment.
+- Newspaper design: masthead, serif type, column layout, print stylesheet; dark mode is the night edition.
 - Backup/restore: download all settings (optionally including the API key) as one JSON file and restore it later.
 
 ## Tests
 
-Run before every push: `node tests/i18n.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
+Run before every push: `node tests/i18n.mjs && node tests/news.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
 
 ## License
 

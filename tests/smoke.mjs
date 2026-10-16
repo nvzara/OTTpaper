@@ -175,6 +175,22 @@ await langCase('en-US', async (pg, reqs) => {
   ok((await pg.locator('h1').innerText()).includes('설정'), 'language kept after reload');
 });
 
+
+// 13. news wire: renders fixture, escapes, only http(s) links, graceful when missing
+await page.setViewportSize({ width: 1000, height: 800 });
+await page.route('**/news/news.json', r => r.fulfill({ json: { generatedAt: '2026-01-01T00:00:00Z', items: [
+  { title: 'Lead <i>story</i>', link: 'https://example.com/a', source: 'Variety', published: '2026-01-01T00:00:00Z', summary: 'Sum <b>x</b>' },
+  { title: 'Evil', link: 'javascript:alert(1)', source: 'X', summary: '' } ] } }));
+await page.goto(base + '/#/news'); await page.waitForSelector('.story');
+ok(await page.locator('.story').count() === 2 && (await page.locator('.story.lead h3').innerText()) === 'Lead <i>story</i>', 'news renders and escapes HTML');
+ok(await page.locator('.story a[href^="javascript"]').count() === 0, 'unsafe news links neutralized');
+ok((await page.locator('.story.lead a').first().getAttribute('rel')).includes('noopener'), 'news links open safely');
+ok((await page.locator('main').innerText()).includes('do not') || (await page.locator('main').innerText()).includes('does not host'), 'news attribution shown');
+await page.unroute('**/news/news.json');
+await page.route('**/news/news.json', r => r.fulfill({ status: 404 }));
+await page.goto(base + '/#/news'); await page.reload(); await page.waitForSelector('.err');
+ok(true, 'missing news.json shows friendly message');
+
 ok(errors.length === 0, 'no JS errors' + (errors.length ? ': ' + errors.join('; ') : ''));
 await browser.close(); server.close();
 process.exit(fails ? 1 : 0);
