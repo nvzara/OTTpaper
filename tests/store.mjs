@@ -4,7 +4,7 @@ globalThis.localStorage = { getItem: k => mem[k] ?? null, setItem: (k, v) => { m
 globalThis.sessionStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const setLang = (...l) => Object.defineProperty(globalThis, 'navigator', { value: { languages: l, language: l[0] }, configurable: true });
 setLang('en-US');
-const { COUNTRIES, defaultCountry, getSettings, recentSearch, recentViews, clippings, restoreBackup, buildBackup } = await import('../js/store.js');
+const { COUNTRIES, defaultCountry, getSettings, recentSearch, recentViews, clippings, restoreBackup, buildBackup, ottKey } = await import('../js/store.js');
 let bad = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) bad++; };
 ok(COUNTRIES.join() === 'KR,JP,US,GB,CA,AU,NZ,IE', 'supported countries: Korea, Japan, English-speaking');
@@ -53,4 +53,5 @@ ok(clippings.list().length === 3 && getSettings().country === 'JP', 'restore: a 
 ok(!('apiKey' in buildBackup({ includeKey: false }).settings) || buildBackup({ includeKey: false }).settings.apiKey === '', 'backup without key has no key');
 let threw = false; try { restoreBackup({ app: 'Other', settings: {} }); } catch { threw = true; }
 ok(threw, 'restore: a file that is not an OTTpaper backup is refused');
+ok(ottKey(undefined) === null && ottKey(null) === null && ottKey('Netflix') === 'netflix' && ottKey('Amazon Prime Video') === 'prime', 'ottKey: provider without a name never throws; known names still match');
 process.exit(bad ? 1 : 0);

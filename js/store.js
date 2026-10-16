@@ -38,7 +38,7 @@ export const SIZES = ['s', 'm', 'l', 'xl'];
 const MATCH = { netflix: ['netflix'], disney: ['disney'], wavve: ['wavve'], tving: ['tving'], watcha: ['watcha'],
   coupang: ['coupang'], apple: ['apple tv'], prime: ['amazon prime', 'prime video'], youtube: ['youtube'] };
 export function ottKey(name) {
-  const n = name.toLowerCase();
+  const n = String(name || '').toLowerCase();
   return OTTS.find(o => MATCH[o.key].some(m => n.includes(m)))?.key ?? null;
 }
 
