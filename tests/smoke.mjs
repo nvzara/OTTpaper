@@ -451,6 +451,23 @@ for (const [label, first, then, expect] of [
   await c.close();
 }
 
+// 22. provider links: only http(s) is linked; a provider without any link is plain text, never a dead link
+for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript:alert(1)']]) {
+  const c = await browser.newContext({ serviceWorkers: 'block' });
+  const pg = await c.newPage(); const pe = [];
+  pg.on('pageerror', e => pe.push(e.message));
+  await pg.addInitScript(() => localStorage.setItem('settings', JSON.stringify({ apiKey: 'k', onboarded: true, lang: 'en', country: 'KR', myOtts: [] })));
+  await pg.route('https://api.themoviedb.org/**', r => {
+    const u = r.request().url();
+    r.fulfill({ json: /watch\/providers/.test(u) ? { results: { KR: { link, flatrate: [{ provider_name: 'Some Local OTT', display_priority: 1 }] } } } : { id: 9, title: 'Linked Film', overview: 'o' } });
+  });
+  await pg.route(/image\.tmdb/, r => r.fulfill({ status: 204 }));
+  await pg.goto(base + '/#/title/movie/9'); await pg.waitForSelector('.article');
+  const hrefs = await pg.evaluate(() => [...document.querySelectorAll('.where a')].map(a => a.getAttribute('href')));
+  ok(hrefs.every(h => /^https?:/.test(h)) && (await pg.locator('.where .pill', { hasText: 'Some Local OTT' }).count()) > 0 && pe.length === 0, `provider links (${label}): safe, and the provider is still listed`);
+  await c.close();
+}
+
 ok(errors.length === 0, 'no JS errors' + (errors.length ? ': ' + errors.join('; ') : ''));
 await browser.close(); server.close();
 process.exit(fails ? 1 : 0);

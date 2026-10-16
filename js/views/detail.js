@@ -5,7 +5,7 @@ import { OTTS, COUNTRIES, ottKey, getSettings, recentViews, clippings } from '..
 import { worldwideRows } from '../advisor.js';
 import { pickTrailer } from '../filters.js';
 import { t, getLang, countryName } from '../i18n.js';
-import { $, $app, esc, fmtDate, fmtNum, typeLabel, toast, poster, grid, errView, sec, stars, lede, scriptCls, skStory, viewGuard } from '../ui.js';
+import { $, $app, esc, fmtDate, fmtNum, typeLabel, toast, poster, grid, errView, sec, stars, lede, scriptCls, skStory, viewGuard, httpUrl } from '../ui.js';
 
 let kindFilter = 'all';
 // TMDB returns status in English; show it in the interface language when we know the word.
@@ -28,12 +28,13 @@ function provHtml(p, s) {
     if (!list.length) return '';
     return `<div><dt>${t('k_' + k)}</dt><dd><ul class="pills">${list.map(x => {
       const key = ottKey(x.provider_name), own = key && mine.has(key);
-      const url = key ? OTTS.find(o => o.key === key).url : p.link;
-      return `<li><a class="pill${own ? ' mine' : ''}" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${own ? I.check() : ''}${esc(x.provider_name)}</a></li>`;
+      const url = key ? OTTS.find(o => o.key === key).url : httpUrl(p.link);
+      const inner = `${own ? I.check() : ''}${esc(x.provider_name)}`;
+      return url && url !== '#' ? `<li><a class="pill${own ? ' mine' : ''}" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${inner}</a></li>` : `<li><span class="pill${own ? ' mine' : ''}">${inner}</span></li>`;
     }).join('')}</ul></dd></div>`;
   }).join('');
   return (rows ? `<dl class="listing">${rows}</dl>` : `<p class="note">${t('no_prov_kind')}</p>`) +
-    (p.link ? `<p class="note"><a href="${esc(p.link)}" target="_blank" rel="noopener noreferrer">${t('tmdb_page')} ${I.external()}</a> ${t('jw_credit')}</p>` : '');
+    (httpUrl(p.link) !== '#' ? `<p class="note"><a href="${esc(httpUrl(p.link))}" target="_blank" rel="noopener noreferrer">${t('tmdb_page')} ${I.external()}</a> ${t('jw_credit')}</p>` : '');
 }
 // One line under the headline that answers "where can I stream this?" before anything else.
 function glanceHtml(p, s, cname) {
@@ -69,7 +70,7 @@ export async function detailView(type, id) {
     recentViews.add({ id: d.id, media_type: type, title, poster_path: d.poster_path,
       release_date: d.release_date, first_air_date: d.first_air_date }, (a, b) => a.id === b.id && a.media_type === b.media_type);
     const cert = certification(d, type, s.country), cname = countryName(s.country);
-    const run = type === 'movie' ? d.runtime : d.episode_run_time?.[0];
+    const run = type === 'movie' ? d.runtime : (d.episode_run_time?.[0] || d.last_episode_to_air?.runtime);
     const names = (list, n) => (list || []).slice(0, n).map(x => esc(x.name)).join(', ');
     const cast = names(d.credits?.cast, 4);
     const makers = type === 'movie' ? names((d.credits?.crew || []).filter(c => c.job === 'Director'), 2) : names(d.created_by, 2);
