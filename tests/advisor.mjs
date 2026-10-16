@@ -1,6 +1,6 @@
 // Unit test for the subscription advisor. Run: node tests/advisor.mjs
 globalThis.localStorage = { getItem: () => null, setItem() {} };
-const { computeCoverage, onMyServices, worldwideRows } = await import('../js/advisor.js');
+const { computeCoverage, onMyServices, worldwideRows, pickLead } = await import('../js/advisor.js');
 let bad = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) bad++; };
 const clips = [1, 2, 3, 4, 5].map(id => ({ id, media_type: 'movie', title: 'T' + id }));
@@ -26,4 +26,14 @@ ok(onMyServices(null, new Set(['netflix'])).length === 0 && onMyServices(kr, new
 const ww = worldwideRows({ US: { flatrate: [{ provider_name: 'A' }, { provider_name: 'B' }] }, JP: { flatrate: [{ provider_name: 'A' }] }, FR: { rent: [{ provider_name: 'X' }] }, DE: {} });
 ok(ww.map(r => r.code).join() === 'US,JP,FR', 'worldwideRows: sorted by subscription count, empty countries dropped');
 ok(ww[2].rentBuy === 1, 'worldwideRows: counts rent/buy-only countries');
+// pickLead
+const cand = [1, 2, 3, 4].map(id => ({ id, media_type: 'movie' }));
+const mine = new Map([['movie:3', 1]]);
+const lead = pickLead(cand, mine, '2026-10-16');
+ok(lead.item.id === 3 && lead.onMine === true, 'pickLead prefers titles on my services');
+ok(pickLead(cand, new Map(), '2026-10-16').onMine === false, 'pickLead falls back to any title');
+ok(pickLead(cand, new Map(), '2026-10-16').item.id === pickLead(cand, new Map(), '2026-10-16').item.id, 'pickLead is stable within a day');
+const days = new Set(Array.from({ length: 20 }, (_, d) => pickLead(cand, new Map(), '2026-10-' + (10 + d)).item.id));
+ok(days.size > 1, 'pickLead varies across days');
+ok(pickLead([], new Map(), 'x') === null, 'pickLead safe on empty list');
 process.exit(bad ? 1 : 0);

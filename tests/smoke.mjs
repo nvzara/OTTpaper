@@ -46,11 +46,15 @@ ok(await page.locator('#toast.show').count() === 1, 'start without key is blocke
 await page.fill('#key', 'test-key');
 await page.click('label.chip:has(.ott[value=wavve])');
 await page.click('#start');
-await page.waitForSelector('.notice + .tabs');
+await page.waitForSelector('.notice ~ .tabs');
 ok(true, 'start with key goes to home');
 ok((await page.locator('.notice').innerText()).includes('no revenue'), 'home shows non-commercial notice');
 await page.waitForSelector('.card');
 ok(await page.locator('.card .t').first().innerText() === '<b>테스트</b>', 'cards render, HTML escaped');
+
+await page.waitForSelector('.lead-story h2 a');
+ok((await page.locator('.lead-story h2 a').innerText()) === '<b>테스트</b>' && (await page.locator('.lead-story .kicker').innerText()).length > 0, "home: today's lead story renders (escaped)");
+ok((await page.locator('.lead-story .kicker').innerText()).toLowerCase().includes('services') || (await page.locator('.lead-story .kicker').innerText()).includes('서비스'), "lead: picked from titles on my services");
 
 // 2. next visit -> straight to home (settings persisted)
 await page.reload();

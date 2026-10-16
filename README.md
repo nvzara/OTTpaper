@@ -56,6 +56,7 @@ tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 - The Wire (News): a GitHub Action fetches public RSS feeds every 3 hours at build time and publishes `news/news.json` (headline, short excerpt and link only). Open it at `#/news`. It is empty locally and until the first deployment.
 - Newspaper design: masthead, serif type, column layout, print stylesheet; dark mode is the night edition.
 - Clippings: save titles from the title page; stored locally, included in backups, kept when you delete history. Press `/` anywhere to jump to search.
+- Today's lead: a front-page story on Home, one pick per day from trending titles, preferring ones on your own services.
 - Search shows an "on my services" badge (and a filter) on results available via your own services; title pages include a worldwide availability table.
 - Subscription advisor (on Clippings): checks where your clipped titles stream in your country and shows which services cover the most, how many your own services cover, and the best one to add. Uses cached availability data; no prices.
 - Themes: Ivory / White / Black (or follow system). Fonts: bundled Newspaper typeface (default, SIL OFL, self-hosted) or system serif / sans / mono; four text sizes.

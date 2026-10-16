@@ -51,3 +51,14 @@ export function worldwideRows(results) {
   })).filter(r => r.flatrate.length || r.other.length || r.rentBuy)
     .sort((a, b) => b.flatrate.length - a.flatrate.length || a.code.localeCompare(b.code));
 }
+
+// Today's lead story: deterministic per calendar day (same pick all day, new one tomorrow).
+// items: candidate titles; mineById: Map(key -> number of MY services offering it). Prefers titles on my services.
+export function pickLead(items, mineById, dayKey) {
+  if (!items.length) return null;
+  const onMine = items.filter(i => (mineById.get(`${i.media_type}:${i.id}`) || 0) > 0);
+  const pool = onMine.length ? onMine : items;
+  let h = 5381;
+  for (const ch of String(dayKey)) h = ((h << 5) + h + ch.charCodeAt(0)) >>> 0;
+  return { item: pool[h % pool.length], onMine: onMine.length > 0 };
+}
