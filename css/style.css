@@ -123,7 +123,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
   .grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
   .mast-line #edition{display:none}
 }
-@media print{.bar,#toast,.tabs,.nav{display:none}body{background:#fff;color:#000}.card img{filter:grayscale(1)}}
+@media print{.bar,#toast,.tabs,.nav,.actions,.notice,.skip,.filters,.attrib p:nth-child(n+3){display:none}body{background:#fff;color:#000}.card img{filter:grayscale(1)}.card{break-inside:avoid}.mast-line #edition{display:none}.print-only{display:block!important}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .ic.filled{fill:currentColor}
 .btn[aria-pressed=true]{background:var(--ink);color:var(--paper)}
@@ -152,3 +152,5 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 .lead-story .more{font:700 12px var(--sans);text-transform:uppercase;letter-spacing:.08em}
 @media (max-width:640px){.lead-story{grid-template-columns:110px 1fr;gap:14px}.lead-story p:not(.meta){display:none}}
 .filters .chips{align-items:center}.chiplabel{font:700 11px var(--sans);text-transform:uppercase;letter-spacing:.12em;color:var(--mut);margin-right:4px}
+.print-only{display:none;font:700 14px var(--sans);text-transform:uppercase;letter-spacing:.1em;margin:6px 0}
+.skip{position:absolute;left:8px;top:-60px;background:var(--ink);color:var(--paper);padding:8px 14px;font:700 13px var(--sans);z-index:30;text-decoration:none}.skip:focus{top:8px}

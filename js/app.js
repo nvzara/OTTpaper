@@ -193,6 +193,9 @@ async function renderLead() {
   } catch { el && (el.innerHTML = ''); }
 }
 
+// Search suggestions: the browser's own <datalist> fed with this device's recent searches (nothing is sent anywhere).
+function refreshSuggest() { $('#qlist').innerHTML = recentSearch.list().map(x => `<option value="${esc(x)}"></option>`).join(''); }
+
 // ---- Search ----
 async function searchView(q) {
   q = (q || '').trim();
@@ -205,6 +208,7 @@ async function searchView(q) {
     return;
   }
   recentSearch.add(q, (a, b) => a === b);
+  refreshSuggest();
   $app.innerHTML = `<h2 class="sec">${I.search()} ${esc(t('search_results', q))}</h2><div id="list"><p class="note">${t('searching')}</p></div>`;
   try {
     const d = await T.search(q);
@@ -389,9 +393,9 @@ function showTonight() {
 function clippingsView() {
   const l = clippings.list();
   $app.innerHTML = `<h1 class="page-h">${I.bookmark()} ${t('clips_title')}</h1><p class="note">${t('clips_sub')}</p>` +
-    (l.length ? `<p class="actions"><button class="btn primary" id="adv">${I.sparkle()} ${t('adv_btn')}</button></p><div id="advOut" aria-live="polite"></div>${grid(l)}`
+    (l.length ? `<p class="actions"><button class="btn primary" id="adv">${I.sparkle()} ${t('adv_btn')}</button><button class="btn" id="print">${I.download()} ${t('print_btn')}</button></p><p class="print-only">${esc(t('print_title', l.length))}</p><div id="advOut" aria-live="polite"></div>${grid(l)}`
       : `<div class="err">${I.info()} ${t('clips_empty')}</div>`);
-  if (l.length) $('#adv').onclick = () => advise(l);
+  if (l.length) { $('#adv').onclick = () => advise(l); $('#print').onclick = () => window.print(); }
 }
 async function advise(clips) {
   const s = getSettings(), out = $('#advOut'), list = clips.slice(0, 60); // cap requests; provider data is cached 3 days
@@ -511,6 +515,8 @@ function applyLang() {
   $('#navNews').innerHTML = I.news() + `<span>${t('nav_news')}</span>`;
   $('#navSet').innerHTML = I.settings() + `<span>${t('nav_settings')}</span>`;
   for (const [id, k] of [['navHome', 'nav_home'], ['navNews', 'nav_news'], ['navTonight', 'nav_tonight'], ['navClips', 'nav_clips'], ['navSet', 'nav_settings']]) { $('#' + id).setAttribute('aria-label', t(k)); $('#' + id).title = t(k); }
+  $('#skip').textContent = t('skip');
+  refreshSuggest();
   $('#dateline').textContent = fmtDate(Date.now(), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   $('#edition').textContent = t('edition');
   $('#motto').textContent = t('motto');
@@ -534,6 +540,7 @@ function route() {
   else if (parts[0] === 'title') detailView(parts[1], parts[2]);
   else home();
 }
+$('#skip').onclick = e => { e.preventDefault(); $app.focus(); };
 $('#searchForm').onsubmit = e => {
   e.preventDefault();
   const q = $('#q').value.trim();

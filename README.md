@@ -63,6 +63,7 @@ tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 - Clippings: save titles from the title page; stored locally, included in backups, kept when you delete history. Press `/` anywhere to jump to search.
 - Tonight (`#/tonight`): choose type, mood and length; OTTpaper asks TMDB for popular titles available on *your* services (TMDB's own provider filter) and picks one; "Another one" re-rolls.
 - Today's lead: a front-page story on Home, one pick per day from trending titles, preferring ones on your own services.
+- Search suggestions from your own recent searches (browser datalist), "skip to content" link, and a print edition of your clippings (print stylesheet).
 - Search filters: decade and sort (relevance / newest / top rated) on top of the "on my services" filter; the Wire has per-service chips.
 - Search shows an "on my services" badge (and a filter) on results available via your own services; title pages include a worldwide availability table.
 - Subscription advisor (on Clippings): checks where your clipped titles stream in your country and shows which services cover the most, how many your own services cover, and the best one to add. Uses cached availability data; no prices.

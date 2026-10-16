@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<a class="skip" id="skip" href="#/"></a>
 <header class="mast">
   <div class="mast-line"><span id="dateline"></span><span id="edition"></span></div>
   <a class="brand" href="#/">OTTpaper</a>
@@ -22,7 +23,8 @@
 </header>
 <div class="bar">
   <form id="searchForm" role="search">
-    <input id="q" type="search" placeholder="Search" autocomplete="off" aria-label="Search">
+    <input id="q" type="search" placeholder="Search" autocomplete="off" aria-label="Search" list="qlist">
+    <datalist id="qlist"></datalist>
   </form>
   <nav class="nav" aria-label="Menu"><a id="navHome" href="#/"></a><a id="navNews" href="#/news"></a><a id="navTonight" href="#/tonight"></a><a id="navClips" href="#/clippings"></a><a id="navSet" href="#/settings"></a></nav>
 </div>

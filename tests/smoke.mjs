@@ -100,6 +100,9 @@ await page.waitForSelector('.card.on-mine');
 await page.click('[data-decade="2010"]'); await page.click('[data-decade="any"]');
 ok(await page.locator('.card.on-mine .avail').count() === 1, 'search: "on my services" badge survives re-filtering');
 
+ok(await page.evaluate(() => [...document.querySelectorAll('#qlist option')].some(o => o.value === 'abc')), 'search suggestions: recent searches fill the datalist');
+ok((await page.getAttribute('#q', 'list')) === 'qlist', 'search box linked to suggestions');
+
 // 6. settings: change + save, theme
 await page.click('#navSet'); await page.waitForSelector('#save');
 await page.selectOption('#country', 'US');
@@ -302,6 +305,15 @@ ok(adv.includes('cover 2 of 2'), 'advisor: my service covers 2 of 2 clipped titl
 ok(await page.locator('.rank li').count() >= 2 && await page.locator('.rank li.mine').count() === 1, 'advisor: ranking with my service highlighted');
 ok(adv.includes('Best one to add: Netflix') || adv.includes('Nothing else'), 'advisor: add-on suggestion shown');
 ok(adv.includes('JustWatch'), 'advisor: JustWatch credited');
+
+// skip link + print
+await page.goto(base + '/#/clippings'); await page.waitForSelector('.card');
+await page.focus('#skip'); await page.keyboard.press('Enter');
+ok(await page.evaluate(() => document.activeElement.id) === 'app' && page.url().endsWith('#/clippings'), 'skip link moves focus to content without changing the page');
+ok(await page.locator('#print').count() === 1 && /\d+ titles/.test(await page.locator('.print-only').textContent()), 'clippings print button and print heading present');
+await page.emulateMedia({ media: 'print' });
+ok(!(await page.locator('.bar').isVisible()) && await page.locator('.print-only').isVisible(), 'print stylesheet hides navigation and shows the print heading');
+await page.emulateMedia({ media: 'screen' });
 
 // 18. Tonight picker
 ok(await page.evaluate(() => [...document.querySelectorAll('.nav a')].every(a => a.getAttribute('aria-label'))), 'nav links have accessible labels (icon-only on mobile)');

@@ -14,17 +14,18 @@
 ## Ideas (pick the most valuable next; reorder freely)
 1. ~~Clippings~~ (done)
 2. ~~Best subscription for my clippings~~ (done: Subscription advisor)
-3. **Search upgrades** — done: "on my services" badge + filter, `/` shortcut. Also done: decade + sort filters, news service chips. Left: suggestions, voice search (NOTE: Chrome's Web Speech API sends audio to Google servers — conflicts with our no-third-party/privacy stance; skip unless a fully on-device option exists).
+3. **Search upgrades** — done: "on my services" badge + filter, `/` shortcut. Also done: decade + sort filters, news service chips. Suggestions from recent searches done. Left: TMDB-backed suggestions (would send keystrokes to TMDB — decide), voice search (NOTE: Chrome's Web Speech API sends audio to Google servers — conflicts with our no-third-party/privacy stance; skip unless a fully on-device option exists).
 4. ~~Worldwide availability~~ (done)
 5. ~~Today's front page~~ (done: lead story + Tonight picker)
 6. ~~PWA~~ (done: manifest, sw.js offline shell, original icon)
-7. **Print edition** — print stylesheet polish ("print my clippings").
+7. ~~Print edition~~ (done: print button on Clippings + print CSS)
 8. **Share** — copyable deep links; Open Graph meta.
 9. **News**: verify feeds in Actions logs; add ko/ja sources only after confirming terms + URL; per-service filter chips.
 10. Accessibility pass (contrast, focus, screen-reader labels), performance pass (image sizes, lazy loading).
 
 ## Iteration log
 - v1: newspaper theme, masthead, The Wire, attribution doc, roadmap.
+- v10: search suggestions (datalist from recent searches), skip link, print edition of clippings. Deploy 15 green.
 - v9: search decade/sort filters (js/filters.js), news per-service chips; search re-render keeps availability badges. Deploy 14 green.
 - v8: Tonight picker (js/tonight.js; uses TMDB discover + provider filter), nav labels for a11y. Deploy 13 (PWA) green.
 - v7: PWA (installable, offline shell; CSP gained manifest-src/worker-src 'self'; sw ignores cross-origin). Lesson: a silent string-replace missed the register call — tests now assert it.
