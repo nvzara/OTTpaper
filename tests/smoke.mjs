@@ -130,9 +130,8 @@ ok(await page.locator('#sug').isHidden(), 'recent searches: Esc closes the panel
 await page.fill('#q', ''); await page.focus('#q'); await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
 await page.waitForFunction(() => location.hash.startsWith('#/search?q=abc'));
 ok(await page.locator('#sug').isHidden(), 'recent searches: Enter on a highlighted entry searches it and closes the panel');
-await page.fill('#q', 'second'); await page.press('#q', 'Enter'); await page.waitForSelector('.card');
+await page.fill('#q', 'second'); await page.press('#q', 'Enter'); await page.waitForFunction(() => /second/.test(document.querySelector('#app h1, #app h2')?.innerText || '') && document.querySelector('#app .card'));
 await page.fill('#q', ''); await page.click('#q');
-if (await page.locator('#sug').isHidden()) await page.keyboard.press('ArrowDown');   // a click right after the page re-render can land before the panel listener is ready
 await page.waitForSelector('#sug:not([hidden]) .sug-x');
 await page.click('#sug .sug-x >> nth=0');
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem('rs')).join()) === 'abc', 'recent searches: the x button removes one entry');
@@ -371,6 +370,11 @@ ok(await page.locator('[data-mood=horror]').count() === 0 && await page.locator(
 ok(await page.locator('[data-len="0"]').getAttribute('aria-pressed') === 'true' && await page.locator('[data-len="90"]').count() === 0, 'tonight: switching type resets the film length (no stale 90-minute limit)');
 tnReqs.length = 0; await page.click('#spin'); await page.waitForSelector('#tnOut .lead-story h2 a');
 ok(tnReqs.length > 0 && tnReqs.every(u => !u.includes('with_runtime.lte')), 'tonight: no runtime limit sent after switching to TV');
+const setMine = async v => { await page.evaluate(v => { const st = JSON.parse(localStorage.getItem('settings')); st.myOtts = v; localStorage.setItem('settings', JSON.stringify(st)); }, v); await page.evaluate(() => { location.hash = '/news'; }); await page.waitForSelector('.wire-sec, #wire, .err'); await page.evaluate(() => { location.hash = '/tonight'; }); await page.waitForSelector('#spin'); };
+await setMine([]);
+ok(await page.locator('#tnMine').count() === 0, 'tonight: without services there is no "only my services" option');
+await setMine(['wavve']);
+ok(await page.locator('#tnMine').isChecked(), 'tonight: "only my services" is on again once services are added');
 
 // 19. friendly errors: network down -> offline message; rate limit -> rate message
 for (const [mode, expect] of [['abort', 'offline'], ['429', 'limiting requests']]) {

@@ -9,7 +9,6 @@ import { $, $app, esc, typeLabel, poster, grid, errView, pageHead, empty, sec, s
 const tn = { type: 'movie', mood: '', len: 0, mine: true };
 export function tonightView() {
   const s = getSettings(), hasMine = s.myOtts.length > 0;
-  if (!hasMine) tn.mine = false;
   if (!MOODS[tn.type][tn.mood]) tn.mood = '';
   if (!LENGTHS[tn.type].includes(tn.len)) tn.len = 0;   // lengths differ per type (film vs episode)
   const row = (label, name, opts, cur) => `<div class="row"><span class="lbl" id="lb-${name}">${label}</span><div class="chips" role="radiogroup" aria-labelledby="lb-${name}">${opts.map(([v, l]) => `<button data-${name}="${v}" aria-pressed="${String(cur) === String(v)}">${esc(l)}</button>`).join('')}</div></div>`;
