@@ -457,3 +457,10 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-of
   .nav a.on::after{left:.42rem;right:.42rem}
   .nav a+a::before{display:none}   /* separators look stray when the index wraps to a second line */
 }
+
+/* Very small phones: a floated photo would squeeze the story into a few characters per line — set it above the text instead */
+@media (max-width:380px){
+  .art-body>.photo{float:none;width:58%;max-width:11rem;margin:.2rem auto 1rem}
+  .art-body>.photo figcaption{text-align:center}
+  .lp{float:none;width:58%;max-width:11rem;margin:0 auto .9rem}
+}
