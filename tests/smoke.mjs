@@ -104,6 +104,7 @@ await page.waitForSelector('.card.on-mine .avail');
 ok((await page.locator('.avail').first().innerText()).length > 0, 'search: "on my services" badge appears');
 await page.click('#onlyMine');
 ok(await page.locator('#results.only-mine').count() === 1 && await page.locator('.card.on-mine').first().isVisible(), 'search: "my services only" filter keeps matching titles');
+ok(await page.locator('#mineNone').isHidden(), 'search: no "nothing on your services" note while titles match');
 
 // search filters (mock result is a 2020 movie)
 await page.click('[data-decade="2010"]');
@@ -465,6 +466,22 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
   await pg.goto(base + '/#/title/movie/9'); await pg.waitForSelector('.article');
   const hrefs = await pg.evaluate(() => [...document.querySelectorAll('.where a')].map(a => a.getAttribute('href')));
   ok(hrefs.every(h => /^https?:/.test(h)) && (await pg.locator('.where .pill', { hasText: 'Some Local OTT' }).count()) > 0 && pe.length === 0, `provider links (${label}): safe, and the provider is still listed`);
+  await c.close();
+}
+
+// 23. "my services only" with no match says so (instead of bare headings)
+{
+  const c = await browser.newContext({ serviceWorkers: 'block' });
+  const pg = await c.newPage(); const pe = [];
+  pg.on('pageerror', e => pe.push(e.message));
+  await pg.addInitScript(() => localStorage.setItem('settings', JSON.stringify({ apiKey: 'k', onboarded: true, lang: 'en', country: 'KR', myOtts: ['wavve'] })));
+  await pg.route('https://api.themoviedb.org/**', r => r.fulfill({ json: /watch\/providers/.test(r.request().url()) ? { results: { KR: { flatrate: [{ provider_name: 'Netflix' }] } } } : { results: [{ id: 5, media_type: 'movie', title: 'Elsewhere Film' }] } }));
+  await pg.route(/image\.tmdb/, r => r.fulfill({ status: 204 }));
+  await pg.goto(base + '/#/search?q=elsewhere'); await pg.waitForSelector('#onlyMine'); await pg.waitForFunction(() => !document.querySelector('#availNote'));
+  await pg.click('#onlyMine');
+  ok(await pg.locator('#mineNone').isVisible() && pe.length === 0, 'search: "my services only" with no match shows a note');
+  await pg.click('#onlyMine');
+  ok(await pg.locator('#mineNone').isHidden(), 'search: note goes away when the filter is turned off');
   await c.close();
 }
 

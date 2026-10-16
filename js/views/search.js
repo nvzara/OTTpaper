@@ -31,6 +31,9 @@ export async function searchView(q) {
     const items = d.results.filter(x => x.media_type === 'movie' || x.media_type === 'tv');
     const mine = new Set(getSettings().myOtts);
     const st = { decade: 'any', sort: 'rel', onlyMine: false }, avail = new Set();   // avail: "type:id" keys on my services
+    let checked = false;   // the background check of my services has finished
+    // With "my services only" on and nothing matching, say so instead of showing bare section headings.
+    const mineNote = () => { const el = $('#mineNone'); if (el) el.hidden = !(st.onlyMine && checked && !$('#results .card.on-mine')); };
     const chips = (name, opts, cur) => `<div class="chips" role="radiogroup" aria-label="${esc(opts.label)}"><span class="chiplabel" aria-hidden="true">${esc(opts.label)}</span>${opts.items.map(([v, l]) => `<button data-${name}="${v}" aria-pressed="${v === cur}">${esc(l)}</button>`).join('')}</div>`;
     const by = (r, ty) => r.filter(x => x.media_type === ty);
     $('#count').textContent = t('search_count', items.length, by(items, 'movie').length, by(items, 'tv').length);
@@ -40,23 +43,25 @@ export async function searchView(q) {
       $('#results').innerHTML = (mv.length || !tv.length ? sec(t('movies'), mv.length) + grid(mv) : '') + (tv.length ? sec(t('tv'), tv.length) + grid(tv) : '');
       $('#results').classList.toggle('only-mine', st.onlyMine);
       for (const k of avail) decorate(k);
+      mineNote();
     };
     $('#list').innerHTML = `<div class="filters">
       ${chips('decade', { label: t('f_decade'), items: DECADES.map(k => [k, k === 'any' ? t('tn_any') : t('d_' + k)]) }, st.decade)}
       ${chips('sort', { label: t('f_sort'), items: SORTS.map(k => [k, t('sort_' + k)]) }, st.sort)}
       ${mine.size ? `<button class="toggle" id="onlyMine" aria-pressed="false">${t('filter_mine')}</button><p class="note" id="availNote" role="status">${t('avail_checking')}</p>` : ''}</div>
+      <p class="note" id="mineNone" role="status" hidden>${esc(t('mine_none'))}</p>
       <div id="results"></div>`;
     for (const k of ['decade', 'sort']) document.querySelectorAll(`[data-${k}]`).forEach(b => b.onclick = () => {
       st[k] = b.dataset[k]; document.querySelectorAll(`[data-${k}]`).forEach(x => x.setAttribute('aria-pressed', x === b)); render();
     });
     const btn = $('#onlyMine');
-    if (btn) btn.onclick = () => { st.onlyMine = btn.getAttribute('aria-pressed') !== 'true'; btn.setAttribute('aria-pressed', st.onlyMine); $('#results').classList.toggle('only-mine', st.onlyMine); };
+    if (btn) btn.onclick = () => { st.onlyMine = btn.getAttribute('aria-pressed') !== 'true'; btn.setAttribute('aria-pressed', st.onlyMine); $('#results').classList.toggle('only-mine', st.onlyMine); mineNote(); };
     const decorate = k => {
       const el = $(`.card[data-k="${k}"]`);
       if (el && !el.classList.contains('on-mine')) { el.classList.add('on-mine'); el.querySelector('.p')?.insertAdjacentHTML('beforeend', `<span class="avail">${I.check()} ${t('badge_mine')}</span>`); }
     };
     render();
-    if (mine.size) markAvailability(items.slice(0, 24), mine, alive, k => { avail.add(k); decorate(k); });
+    if (mine.size) markAvailability(items.slice(0, 24), mine, alive, k => { avail.add(k); decorate(k); }).then(() => { if (!alive()) return; checked = true; mineNote(); });
   } catch (e) { if (alive()) $('#list').innerHTML = errView(e); }
 }
 
