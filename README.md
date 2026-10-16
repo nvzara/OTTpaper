@@ -27,32 +27,27 @@ on GitHub Pages.
 ## Project layout
 
 ```
-index.html        page shell (header, footer with attributions)
-css/style.css     all styles (light/dark themes via CSS variables)
-js/app.js         router + views (welcome, home, search, detail, settings)
-js/tmdb.js        TMDB API client + localStorage cache
-js/i18n.js        UI translations (en/ko/ja) + language detection
-sw.js / manifest.webmanifest / icons/   PWA: offline shell, install metadata, original app icon
-js/filters.js      search decade/sort filters + news service filter
-js/tonight.js      "Tonight" picker logic (moods, discover params, picking)
-js/advisor.js      subscription advisor logic (coverage of clippings per service)
-js/store.js       settings, history, backup/restore (validated), OTT/country lists
-js/icons.js       original inline SVG icons (no third-party icon set)
-docs/PLAN.md      development plan
-tests/smoke.mjs   browser smoke test with a mocked TMDB API
-scripts/          build-time tools: fetch-news.mjs (RSS -> news.json), rss.mjs (parser)
-news/feeds.json   news sources + OTT keywords
-docs/ATTRIBUTION.md  third-party credits & licensing rules
-docs/ROADMAP.md   what's done / next
-fonts/            bundled OFL fonts (Playfair Display, Source Serif 4) + license texts
-tests/security.mjs  static security/licensing checks (CSP, key handling, fonts, secrets)
-tests/advisor.mjs advisor unit test
-tests/tonight.mjs picker unit test
-tests/filters.mjs filter unit test
-tests/contrast.mjs WCAG contrast check for all themes
-tests/news.mjs    RSS parser unit test
-tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
+index.html           page shell (masthead, nav, footer, CSP)
+css/style.css        all styles (themes, fonts, newspaper layout, print)
+sw.js, manifest.webmanifest, icons/   PWA: offline shell, install metadata, original app icon
+fonts/               bundled OFL fonts (Playfair Display, Source Serif 4) + license texts
+js/app.js            entry: page chrome text, router, service worker, shortcuts
+js/ui.js             shared helpers: DOM, escaping, toast, cards/grid, error view, theme
+js/views/            one file per screen: home, search, detail, tonight, clippings, news, settings
+js/tmdb.js           TMDB API client + localStorage cache (the only place that builds API requests)
+js/store.js          settings, history, clippings, backup/restore (validated), OTT/country lists
+js/i18n.js           UI translations (en/ko/ja) + language detection
+js/advisor.js        subscription advisor, "on my services", worldwide table, today's lead (pure logic)
+js/tonight.js        "Tonight" picker logic     js/filters.js  search/news filters, trailer pick
+js/icons.js          original inline SVG icons
+scripts/             build-time tools: fetch-news.mjs (RSS -> news.json), rss.mjs (parser)
+news/feeds.json      news sources + OTT keywords
+docs/                PLAN.md, ROADMAP.md, ATTRIBUTION.md (third-party credits & licensing rules)
+tests/               smoke (browser), i18n, news, security, advisor, tonight, filters, contrast
 ```
+
+Pure-logic modules (advisor, tonight, filters, rss) have no DOM/network access and are unit-tested in Node.
+After moving code between modules, run an `eslint` `no-undef`/`no-unused-vars` check (e.g. `npx eslint --no-config-lookup`-style temp config) to catch missing imports.
 
 ## Features
 

@@ -25,6 +25,7 @@
 
 ## Iteration log
 - v1: newspaper theme, masthead, The Wire, attribution doc, roadmap.
+- v13: refactor — app.js (563 lines) split into js/ui.js + js/views/*.js; verified by eslint no-undef/no-unused + all tests (92 browser checks). Deploy 18 green.
 - v12: trailer link + recommendations on title pages (extra data via append_to_response; no new requests).
 - v11: contrast test (48 checks, all themes pass), friendly offline/429 errors. Deploy 16 green.
 - v10: search suggestions (datalist from recent searches), skip link, print edition of clippings. Deploy 15 green.

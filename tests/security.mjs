@@ -29,7 +29,7 @@ ok(/default-src 'none'/.test(csp) && /object-src 'none'/.test(csp) && /base-uri 
 ok(/name="referrer" content="no-referrer"/.test(html), 'Referrer-Policy: no-referrer');
 ok(!/(src|href)="https?:\/\/(?!www\.themoviedb|www\.justwatch)/.test(html.replace(/<a [^>]*>/g, '')) && !/<script[^>]+src="http/.test(html) && !/<link[^>]+href="http/.test(html), 'index.html loads nothing from third-party hosts');
 ok(!/@import|url\(\s*["']?https?:/.test(texts['css/style.css']), 'CSS loads nothing from third-party hosts');
-ok(!/style="/.test(html + (texts['js/app.js'] || '')), 'no inline style attributes (CSP style-src self)');
+
 
 // Secrets
 const keyLike = /\b[0-9a-f]{32}\b|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}|api_key=[0-9a-f]{8,}|ghp_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{20,}/i;
@@ -39,12 +39,14 @@ ok(!files.some(f => /(^|\/)\.env/.test(rel(f))), 'no .env files');
 
 // Key handling rules in code
 const js = Object.entries(texts).filter(([f]) => /^js\//.test(f));
+const jsAll = js.map(([, t]) => t).join('\n');
+ok(!/style="/.test(html + jsAll), 'no inline style attributes (CSP style-src self)');
 ok(!js.some(([, t]) => /console\.(log|debug|info|warn|error)/.test(t)), 'no console output in app code (cannot log secrets)');
 ok(!js.some(([, t]) => /location\.(hash|search|href)\s*=[^=]*apiKey|encodeURIComponent\(\s*[^)]*apiKey/.test(t)), 'API key is never put into a URL by the app');
 ok(!js.filter(([f]) => f !== 'js/tmdb.js').some(([, t]) => /api_key/.test(t)), 'only js/tmdb.js builds API requests');
 ok(/credentials: 'omit'/.test(texts['js/tmdb.js']) && /referrerPolicy: 'no-referrer'/.test(texts['js/tmdb.js']), 'TMDB requests: no cookies, no referrer');
-ok(/id="inclKey">/.test(texts['js/app.js']) && !/id="inclKey" checked/.test(texts['js/app.js']), 'backup excludes API key by default');
-ok(!/innerHTML\s*=[^;]*\bapiKey\b/.test(texts['js/app.js'].replace(/value="\$\{esc\(s\.apiKey\)\}"/g, '')), 'API key never rendered as raw HTML');
+ok(/id="inclKey">/.test(jsAll) && !/id="inclKey" checked/.test(jsAll), 'backup excludes API key by default');
+ok(!/innerHTML\s*=[^;]*\bapiKey\b/.test(jsAll.replace(/value="\$\{esc\(s\.apiKey\)\}"/g, '')), 'API key never rendered as raw HTML');
 
 // Fonts: every bundled font family has its OFL license + notice
 const fonts = files.map(rel).filter(f => /^fonts\/.*\.woff2$/.test(f));
