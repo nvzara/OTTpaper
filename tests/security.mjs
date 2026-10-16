@@ -13,13 +13,18 @@ async function walk(d, out = []) {
 }
 const files = await walk(ROOT);
 const rel = f => f.slice(ROOT.length);
-const texts = Object.fromEntries(await Promise.all(files.filter(f => /\.(html|js|mjs|css|json|md|yml|txt)$/.test(f)).map(async f => [rel(f), await readFile(f, 'utf8')])));
+const texts = Object.fromEntries(await Promise.all(files.filter(f => /\.(html|js|mjs|css|json|md|yml|txt|svg|webmanifest)$/.test(f)).map(async f => [rel(f), await readFile(f, 'utf8')])));
 const html = texts['index.html'];
 
 // CSP
 const csp = (html.match(/Content-Security-Policy" content="([^"]+)"/) || [])[1] || '';
 ok(/script-src 'self'(;|$)/.test(csp) && !/unsafe-inline|unsafe-eval/.test(csp.split('style-src')[0]), 'CSP: scripts only from self, no unsafe-inline/eval');
 ok(/connect-src 'self' https:\/\/api\.themoviedb\.org(;|$)/.test(csp), 'CSP: network limited to api.themoviedb.org');
+ok(/manifest-src 'self'/.test(csp) && /worker-src 'self'/.test(csp), 'CSP: manifest and workers only from self');
+ok(/url\.origin !== self\.location\.origin\) return/.test(texts['sw.js']) && !/api\.themoviedb|api_key/.test(texts['sw.js']), 'service worker ignores cross-origin requests (API calls and key never touched)');
+ok(/serviceWorker\.register\('sw\.js'\)/.test(texts['js/app.js']), 'app registers the service worker');
+const jsFiles = files.map(rel).filter(f => /^js\/.*\.js$/.test(f)), fontFiles = files.map(rel).filter(f => /^fonts\/.*\.woff2$/.test(f));
+ok([...jsFiles, ...fontFiles, 'css/style.css', 'index.html'].every(f => texts['sw.js'].includes(`'${f}'`)), 'every js/font/css file is listed in sw.js offline shell (add new files there)');
 ok(/default-src 'none'/.test(csp) && /object-src 'none'/.test(csp) && /base-uri 'none'/.test(csp), 'CSP: default-src none, no plugins, no base tag');
 ok(/name="referrer" content="no-referrer"/.test(html), 'Referrer-Policy: no-referrer');
 ok(!/(src|href)="https?:\/\/(?!www\.themoviedb|www\.justwatch)/.test(html.replace(/<a [^>]*>/g, '')) && !/<script[^>]+src="http/.test(html) && !/<link[^>]+href="http/.test(html), 'index.html loads nothing from third-party hosts');
@@ -49,7 +54,8 @@ ok(/Adobe/.test(texts['fonts/OFL-SourceSerif4.txt']) && /Playfair Display Projec
 ok(/Playfair Display/.test(texts['docs/ATTRIBUTION.md']) && /Source Serif/.test(texts['docs/ATTRIBUTION.md']), 'fonts listed in docs/ATTRIBUTION.md');
 ok(!files.some(f => /\.(ttf|otf|woff)$/.test(f)), 'no unlicensed/unknown font formats');
 const images = files.map(rel).filter(f => /\.(png|jpe?g|gif|webp|svg|ico)$/.test(f));
-ok(images.length === 0, 'no bundled images (no unlicensed artwork)' + (images.length ? ': ' + images : ''));
+ok(images.every(f => f === 'icons/icon.svg'), 'only our own original app icon is bundled' + (images.length ? ': ' + images : ''));
+ok(/Original artwork/.test(texts['icons/icon.svg']), 'app icon is marked as original artwork');
 ok(/MIT License/.test(await readFile(join(ROOT, 'LICENSE'), 'utf8')), 'MIT LICENSE present');
 
 console.log(bad ? 'security FAILED' : 'security OK');

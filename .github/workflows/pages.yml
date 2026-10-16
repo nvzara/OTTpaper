@@ -28,7 +28,7 @@ jobs:
           node tests/security.mjs
           node tests/advisor.mjs
           mkdir -p _site/news
-          cp -r index.html css js fonts LICENSE _site/
+          cp -r index.html sw.js manifest.webmanifest icons css js fonts LICENSE _site/
           cp news/feeds.json _site/news/ 2>/dev/null || true
           node scripts/fetch-news.mjs _site/news/news.json
       - uses: actions/upload-pages-artifact@v3

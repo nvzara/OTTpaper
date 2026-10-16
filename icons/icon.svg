@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="OTTpaper">
+  <!-- Original artwork for OTTpaper (MIT, same as the project): a newspaper page with a play mark. -->
+  <rect width="512" height="512" rx="96" fill="#f4efe3"/>
+  <rect x="64" y="64" width="384" height="384" rx="40" fill="none" stroke="#1a1814" stroke-width="20"/>
+  <path d="M64 168h384" stroke="#1a1814" stroke-width="12"/>
+  <path d="M64 180h384" stroke="#1a1814" stroke-width="4"/>
+  <path d="M212 252v136l116-68z" fill="#9b2d1f"/>
+  <path d="M104 118h120M288 118h120" stroke="#1a1814" stroke-width="14" stroke-linecap="round"/>
+</svg>

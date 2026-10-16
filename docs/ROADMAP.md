@@ -17,7 +17,7 @@
 3. **Search upgrades** — done: "on my services" badge + filter, `/` shortcut. Left: year/type filters, suggestions, voice search (NOTE: Chrome's Web Speech API sends audio to Google servers — conflicts with our no-third-party/privacy stance; skip unless a fully on-device option exists).
 4. ~~Worldwide availability~~ (done)
 5. Today's front page — lead story done; left: "what to watch tonight" picker by mood/length.
-6. **PWA** — manifest + service worker for offline front page and install.
+6. ~~PWA~~ (done: manifest, sw.js offline shell, original icon)
 7. **Print edition** — print stylesheet polish ("print my clippings").
 8. **Share** — copyable deep links; Open Graph meta.
 9. **News**: verify feeds in Actions logs; add ko/ja sources only after confirming terms + URL; per-service filter chips.
@@ -25,6 +25,7 @@
 
 ## Iteration log
 - v1: newspaper theme, masthead, The Wire, attribution doc, roadmap.
+- v7: PWA (installable, offline shell; CSP gained manifest-src/worker-src 'self'; sw ignores cross-origin). Lesson: a silent string-replace missed the register call — tests now assert it.
 - v6: Today's lead story on Home (pickLead in advisor.js, unit-tested). Deploys 1-11 green.
 - v5: search results badged/filterable by my services; worldwide availability table on title pages; fixed poster-placeholder overflow.
 - v4: subscription advisor (js/advisor.js + clippings page), deploys 1-9 all green incl. CSP/fonts.

@@ -32,6 +32,7 @@ css/style.css     all styles (light/dark themes via CSS variables)
 js/app.js         router + views (welcome, home, search, detail, settings)
 js/tmdb.js        TMDB API client + localStorage cache
 js/i18n.js        UI translations (en/ko/ja) + language detection
+sw.js / manifest.webmanifest / icons/   PWA: offline shell, install metadata, original app icon
 js/advisor.js      subscription advisor logic (coverage of clippings per service)
 js/store.js       settings, history, backup/restore (validated), OTT/country lists
 js/icons.js       original inline SVG icons (no third-party icon set)
@@ -59,6 +60,7 @@ tests/i18n.mjs    checks en/ko/ja translation keys stay in sync
 - Today's lead: a front-page story on Home, one pick per day from trending titles, preferring ones on your own services.
 - Search shows an "on my services" badge (and a filter) on results available via your own services; title pages include a worldwide availability table.
 - Subscription advisor (on Clippings): checks where your clipped titles stream in your country and shows which services cover the most, how many your own services cover, and the best one to add. Uses cached availability data; no prices.
+- Installable & offline: add OTTpaper to your home screen; the app shell works offline (own files only; API data is never cached by the service worker).
 - Themes: Ivory / White / Black (or follow system). Fonts: bundled Newspaper typeface (default, SIL OFL, self-hosted) or system serif / sans / mono; four text sizes.
 - API key safety: stored only in your browser (optionally only for the current tab), masked input, never in URLs or backups by default, CSP + no-referrer, network only to TMDB.
 - Backup/restore: download all settings (optionally including the API key) as one JSON file and restore it later.

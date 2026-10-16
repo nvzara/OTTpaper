@@ -1,0 +1,11 @@
+{
+  "name": "OTTpaper – streaming search, newspaper style",
+  "short_name": "OTTpaper",
+  "description": "Find where movies and TV shows stream. Free, non-commercial personal project.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4efe3",
+  "theme_color": "#1a1814",
+  "icons": [{ "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

@@ -459,6 +459,8 @@ $('#searchForm').onsubmit = e => {
   location.hash = '/search' + (q ? '?q=' + encodeURIComponent(q) : '');
 };
 $('#searchForm').insertAdjacentHTML('afterbegin', `<span class="si">${I.search()}</span>`);
+// Offline app shell (same-origin files only; see sw.js)
+if ('serviceWorker' in navigator && isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
 applyTheme();
 applyLang();
 // "/" focuses the search box (like many newspaper-style sites and dev tools)

@@ -7,7 +7,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
+const MIME = { '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 const server = http.createServer(async (req, res) => {
   const p = normalize(decodeURIComponent(req.url.split('?')[0])).replace(/^(\.\.[/\\])+/, '');
   try { res.setHeader('content-type', MIME[extname(p)] || 'text/html'); res.end(await readFile(join(ROOT, p === '/' ? 'index.html' : p))); }
@@ -19,7 +19,7 @@ let fails = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined }).catch(() => chromium.launch());
-const ctx = await browser.newContext({ acceptDownloads: true });
+const ctx = await browser.newContext({ acceptDownloads: true, serviceWorkers: 'block' });
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
@@ -149,7 +149,7 @@ ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)
 
 // 12. languages: browser default, manual choice, TMDB request language, overview fallback
 async function langCase(locale, fn) {
-  const c = await browser.newContext({ locale });
+  const c = await browser.newContext({ locale, serviceWorkers: 'block' });
   const pg = await c.newPage();
   const reqs = [];
   pg.on('pageerror', e => errors.push(e.message));
@@ -286,6 +286,25 @@ ok(adv.includes('cover 2 of 2'), 'advisor: my service covers 2 of 2 clipped titl
 ok(await page.locator('.rank li').count() >= 2 && await page.locator('.rank li.mine').count() === 1, 'advisor: ranking with my service highlighted');
 ok(adv.includes('Best one to add: Netflix') || adv.includes('Nothing else'), 'advisor: add-on suggestion shown');
 ok(adv.includes('JustWatch'), 'advisor: JustWatch credited');
+
+// 17. PWA: manifest + service worker; app shell opens offline; SW never handles cross-origin
+{
+  const c = await browser.newContext({ serviceWorkers: 'allow' });
+  const pg = await c.newPage();
+  await pg.route('https://api.themoviedb.org/**', r => r.fulfill({ json: { results: [] } }));
+  await pg.goto(base + '/'); await pg.waitForSelector('#q');
+  ok(await pg.evaluate(() => fetch('manifest.webmanifest').then(r => r.json()).then(m => m.short_name === 'OTTpaper' && m.display === 'standalone')), 'PWA manifest valid');
+  await pg.evaluate(() => navigator.serviceWorker.ready);
+  await pg.waitForFunction(async () => (await caches.keys()).includes('ottpaper-v1') && (await (await caches.open('ottpaper-v1')).keys()).length > 8);
+  ok(true, 'service worker installed and app shell cached');
+  const cached = await pg.evaluate(async () => (await (await caches.open('ottpaper-v1')).keys()).map(r => new URL(r.url).origin));
+  ok(cached.length > 8 && cached.every(o => o === base), 'cache holds only same-origin files');
+  await pg.reload(); await pg.waitForSelector('#q');
+  await c.setOffline(true);
+  await pg.reload(); await pg.waitForSelector('#q');
+  ok((await pg.title()).includes('OTTpaper'), 'app shell opens offline');
+  await c.close();
+}
 
 ok(errors.length === 0, 'no JS errors' + (errors.length ? ': ' + errors.join('; ') : ''));
 await browser.close(); server.close();
