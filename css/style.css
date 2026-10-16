@@ -29,7 +29,7 @@
 :root:lang(ko){--serif:"Iowan Old Style","Palatino Linotype",Palatino,"Noto Serif KR","Noto Serif CJK KR","AppleMyungjo","Nanum Myeongjo","Batang",Georgia,"Times New Roman",serif;--sans:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic","Segoe UI",sans-serif}
 :root:lang(ja){--serif:"Iowan Old Style","Palatino Linotype",Palatino,"Noto Serif JP","Noto Serif CJK JP","Hiragino Mincho ProN","Yu Mincho","YuMincho",Georgia,"Times New Roman",serif;--sans:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Yu Gothic","Meiryo","Segoe UI",sans-serif}
 :root:lang(ko) body{word-break:keep-all;overflow-wrap:break-word}
-:root:lang(ja) body{line-break:strict}
+:root:lang(ja) body{line-break:strict;word-break:auto-phrase} /* phrase-aware breaks in Japanese where supported */
 :root:lang(ko) :is(.deck,.ear,figcaption,.jump,.preview,.empty p,.motto),:root:lang(ja) :is(.deck,.ear,figcaption,.jump,.preview,.empty p,.motto){font-style:normal}
 
 /* ---- Base ---- */
@@ -99,7 +99,7 @@ main>*{animation:turn .35s ease-out}
 .sect-head::after{content:"";position:absolute;left:0;right:0;bottom:-5px;border-bottom:1px solid var(--rule)}
 .sect-head h1{font:900 clamp(2.2rem,6.4vw,3.8rem)/1.04 var(--hf);letter-spacing:-.015em;margin:.3rem 0 .45rem;text-wrap:balance}
 .sect-head h1.long{font-size:clamp(1.8rem,4.6vw,2.8rem)}
-.sect-head .deck{max-width:34em;margin:0 auto}
+.sect-head .deck{max-width:34em;margin:0 auto;text-wrap:balance}
 .sect-head .byline{margin-top:.6rem}
 
 /* ---- Buttons, index-style choices ---- */
