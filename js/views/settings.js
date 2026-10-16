@@ -52,7 +52,7 @@ function readForm() {
 }
 // Changing the language re-renders the page in the new language; keep whatever was typed so far.
 function bindLang() {
-  $('#lang').onchange = () => { draft = readForm(); saveSettings({ lang: draft.lang }); hooks.applyLang(); hooks.route(); };
+  $('#lang').onchange = () => { draft = readForm(); saveSettings({ lang: draft.lang }); hooks.applyLang(); hooks.route(); $('#lang')?.focus(); };   // the page is redrawn; keep the keyboard on the language box
 }
 // Live preview of theme / font / size while choosing (saved immediately; the key is only saved with the Save button).
 const previewTheme = () => {
@@ -133,6 +133,7 @@ export function settingsView() {
   $('#imp').onclick = () => $('#file').click();
   $('#file').onchange = async e => {
     const f = e.target.files[0];
+    e.target.value = '';   // choosing the same file again must work
     if (!f) return;
     try {
       if (f.size > 1e6) throw new Error('TOO_BIG');

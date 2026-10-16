@@ -238,6 +238,7 @@ await langCase('en-US', async (pg, reqs) => {
   await pg.selectOption('#lang', 'ja');
   await pg.waitForFunction(() => document.querySelector('.welcome h1')?.textContent.includes('ようこそ'));
   ok(await pg.inputValue('#key') === 'typed-key', 'language change keeps typed API key');
+  ok(await pg.evaluate(() => document.activeElement?.id) === 'lang', 'language change keeps keyboard focus on the language box');
   ok(await pg.evaluate(() => document.title.includes('配信')), 'document title translated');
   await pg.click('#start'); await pg.waitForSelector('.card');
   ok(reqs.some(u => u.includes('language=ja-JP')), 'content requested in ja-JP');
