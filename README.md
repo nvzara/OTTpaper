@@ -54,7 +54,8 @@ After moving code between modules, run an `eslint` `no-undef`/`no-unused-vars` c
 - First visit: welcome screen guides you through entering your own TMDB key, country and your OTT services; later visits open the main screen directly.
 - Settings can be changed anytime; everything is stored in your browser only.
 - Languages: English / 한국어 / 日本語. Defaults to the browser language (English if unsupported); can be changed in Settings. Titles, overviews and cast info are requested from TMDB in the selected language (English overview as fallback). Translations may contain awkward expressions.
-- The Wire (News): a GitHub Action fetches public RSS feeds every 3 hours at build time and publishes `news/news.json` (headline, short excerpt and link only). Open it at `#/news`. It is empty locally and until the first deployment.
+- The Wire (News) by country edition: `news/news.<CC>.json` per country; local-language sources can be added per country in `news/feeds.json` (`editions`) once their terms are confirmed.
+- The Wire is built by a GitHub Action every 3 hours from public RSS feeds (headline, short excerpt and link only) and is empty locally until the first deployment. Open it at `#/news`.
 - Newspaper design: masthead, serif type, column layout, print stylesheet; dark mode is the night edition.
 - Clippings: save titles from the title page; stored locally, included in backups, kept when you delete history. Press `/` anywhere to jump to search.
 - Title pages: trailer link (opens YouTube in a new tab — no embeds, nothing loaded from YouTube until you click) and a "You may also like" row of TMDB recommendations.

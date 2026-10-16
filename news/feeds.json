@@ -1,47 +1,68 @@
 {
-  "_note": "Only headline, a short excerpt (<=220 chars) and a link back are published. Article text stays with the publisher. Add a feed only if its terms allow headline syndication.",
+  "_note": "Only headline, a short excerpt (<=220 chars) and a link back are published. Article text stays with the publisher. Add a feed only after its terms are confirmed to allow headline syndication. 'editions': [\"*\"] = every country (worldwide); a local-language source lists its country codes, e.g. [\"KR\"], and optionally \"enabled\": false to park it.",
   "feeds": [
     {
       "name": "Variety",
       "url": "https://variety.com/feed/",
       "home": "https://variety.com/",
-      "lang": "en"
+      "lang": "en",
+      "editions": [
+        "*"
+      ]
     },
     {
       "name": "Deadline",
       "url": "https://deadline.com/feed/",
       "home": "https://deadline.com/",
-      "lang": "en"
+      "lang": "en",
+      "editions": [
+        "*"
+      ]
     },
     {
       "name": "The Hollywood Reporter",
       "url": "https://www.hollywoodreporter.com/feed/",
       "home": "https://www.hollywoodreporter.com/",
-      "lang": "en"
+      "lang": "en",
+      "editions": [
+        "*"
+      ]
     },
     {
       "name": "The Verge – Entertainment",
       "url": "https://www.theverge.com/rss/entertainment/index.xml",
       "home": "https://www.theverge.com/entertainment",
-      "lang": "en"
+      "lang": "en",
+      "editions": [
+        "*"
+      ]
     },
     {
       "name": "Variety – TV",
       "url": "https://variety.com/v/tv/feed/",
       "home": "https://variety.com/v/tv/",
-      "lang": "en"
+      "lang": "en",
+      "editions": [
+        "*"
+      ]
     },
     {
       "name": "Deadline – TV",
       "url": "https://deadline.com/category/tv/feed/",
       "home": "https://deadline.com/category/tv/",
-      "lang": "en"
+      "lang": "en",
+      "editions": [
+        "*"
+      ]
     },
     {
       "name": "The Hollywood Reporter – TV",
       "url": "https://www.hollywoodreporter.com/c/tv/feed/",
       "home": "https://www.hollywoodreporter.com/c/tv/",
-      "lang": "en"
+      "lang": "en",
+      "editions": [
+        "*"
+      ]
     }
   ],
   "keywords": [
@@ -75,5 +96,15 @@
     "streamers",
     "vod",
     "subscribers"
+  ],
+  "countries": [
+    "KR",
+    "US",
+    "JP",
+    "GB",
+    "CA",
+    "AU",
+    "DE",
+    "FR"
   ]
 }

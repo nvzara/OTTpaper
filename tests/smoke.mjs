@@ -80,7 +80,7 @@ ok(await page.locator('.recs .card').count() === 1 && (await page.locator('.recs
 ok(await page.locator('.ww').count() === 1 && await page.locator('.ww tr.cur').count() === 1, 'worldwide availability table lists the current country');
 
 // detail layout: poster placeholder must stay inside its column
-ok(await page.evaluate(() => { const n = document.querySelector('.detail .p'); return !n || n.getBoundingClientRect().width <= 260; }), 'detail poster column stays narrow');
+ok(await page.evaluate(() => { const n = document.querySelector('.article .photo'); return !n || n.getBoundingClientRect().width <= 270; }), 'article photo column stays narrow');
 
 // 5. search
 await page.fill('#q', 'abc'); await page.press('#q', 'Enter');
@@ -205,7 +205,7 @@ await langCase('en-US', async (pg, reqs) => {
   ok(await pg.evaluate(() => document.title.includes('配信')), 'document title translated');
   await pg.click('#start'); await pg.waitForSelector('.card');
   ok(reqs.some(u => u.includes('language=ja-JP')), 'content requested in ja-JP');
-  await pg.click('.card'); await pg.waitForSelector('.detail');
+  await pg.click('.card'); await pg.waitForSelector('.article');
   await pg.waitForFunction(() => document.body.textContent.includes('English fallback overview'));
   ok(true, 'missing overview falls back to English');
   await pg.click('#navSet'); await pg.waitForSelector('#lang');
@@ -219,26 +219,28 @@ await langCase('en-US', async (pg, reqs) => {
 
 // 13. news wire: renders fixture, escapes, only http(s) links, graceful when missing
 await page.setViewportSize({ width: 1000, height: 800 });
-await page.route('**/news/news.json', r => r.fulfill({ json: { generatedAt: '2026-01-01T00:00:00Z', items: [
+await page.route('**/news/news.*.json', r => r.fulfill({ json: { generatedAt: '2026-01-01T00:00:00Z', items: [
   { title: 'Lead <i>story</i>', link: 'https://example.com/a', source: 'Variety', published: '2026-01-01T00:00:00Z', summary: 'Sum <b>x</b>' },
-  { title: 'Evil', link: 'javascript:alert(1)', source: 'X', summary: '' } ] } }));
+  { title: 'Evil', link: 'javascript:alert(1)', source: 'X', summary: '' },
+  { title: 'Local story', link: 'https://example.com/local', source: 'Local Paper', local: true, published: '2026-01-02T00:00:00Z' } ], localSources: 1 } }));
 await page.goto(base + '/#/news'); await page.waitForSelector('.story');
-ok(await page.locator('.story').count() === 2 && (await page.locator('.story.lead h3').innerText()) === 'Lead <i>story</i>', 'news renders and escapes HTML');
+ok((await page.locator('.edition-tag').innerText()).length > 0, 'news: edition tag shows the country');
+ok(await page.locator('.story').count() === 3 && (await page.locator('.wire').count()) === 2 && (await page.locator('.story h3 a', { hasText: 'Lead <i>story</i>' }).count()) === 1, 'news renders and escapes HTML');
 ok(await page.locator('.story a[href^="javascript"]').count() === 0, 'unsafe news links neutralized');
 ok((await page.locator('.story.lead a').first().getAttribute('rel')).includes('noopener'), 'news links open safely');
 ok((await page.locator('main').innerText()).includes('do not') || (await page.locator('main').innerText()).includes('does not host'), 'news attribution shown');
 await page.click('[data-ns=netflix]');
 ok(await page.locator('.story').count() === 0, 'news: service filter hides unrelated stories');
 await page.click('[data-ns=all]');
-ok(await page.locator('.story').count() === 2, 'news: "All" restores stories');
-await page.unroute('**/news/news.json');
-await page.route('**/news/news.json', r => r.fulfill({ status: 404 }));
+ok(await page.locator('.story').count() === 3, 'news: "All" restores stories');
+await page.unroute('**/news/news.*.json');
+await page.route('**/news/news.*.json', r => r.fulfill({ status: 404 }));
 await page.goto(base + '/#/news'); await page.reload(); await page.waitForSelector('.err');
 ok(true, 'missing news.json shows friendly message');
 
 
 // 14. clippings + "/" shortcut
-await page.route('**/news/news.json', r => r.fulfill({ status: 404 }));
+await page.route('**/news/news.*.json', r => r.fulfill({ status: 404 }));
 await page.goto(base + '/#/clippings'); await page.waitForSelector('.err');
 ok(true, 'empty clippings shows hint');
 await page.goto(base + '/#/title/movie/1'); await page.waitForSelector('#clip');

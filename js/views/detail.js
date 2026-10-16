@@ -5,7 +5,7 @@ import { OTTS, ottKey, getSettings, recentViews, clippings } from '../store.js';
 import { worldwideRows } from '../advisor.js';
 import { pickTrailer } from '../filters.js';
 import { t, getLang, countryName } from '../i18n.js';
-import { $, $app, esc, typeLabel, toast, poster, grid, errView } from '../ui.js';
+import { $, $app, esc, fmtDate, typeLabel, toast, poster, grid, errView } from '../ui.js';
 
 // ---- Detail ----
 let kindFilter = 'all';
@@ -57,27 +57,52 @@ export async function detailView(type, id) {
       release_date: d.release_date, first_air_date: d.first_air_date }, (a, b) => a.id === b.id && a.media_type === b.media_type);
     const cert = certification(d, type, s.country);
     const run = type === 'movie' ? d.runtime : d.episode_run_time?.[0];
-    const cast = (d.credits?.cast || []).slice(0, 8).map(c => esc(c.name)).join(', ');
-    const meta = [typeLabel(type), (d.release_date || d.first_air_date || '').slice(0, 4), cert, run ? t('min', run) : '',
-      type === 'tv' ? t('seasons', d.number_of_seasons, d.number_of_episodes) : '', d.status].filter(Boolean).map(esc).join(' · ');
+    const names = (list, n) => (list || []).slice(0, n).map(x => esc(x.name)).join(', ');
+    const cast = names(d.credits?.cast, 4);
+    const makers = type === 'movie' ? names((d.credits?.crew || []).filter(c => c.job === 'Director'), 2) : names(d.created_by, 2);
+    const year = (d.release_date || d.first_air_date || '').slice(0, 4);
+    const origTitle = d.original_title || d.original_name;
+    const kicker = [typeLabel(type), ...(d.genres || []).slice(0, 2).map(g => g.name), year].filter(Boolean).map(esc).join(' · ');
+    const facts = [
+      [t('fact_rating'), d.vote_average ? `★ ${d.vote_average.toFixed(1)}${d.vote_count ? ` <small>(${esc(t('fact_votes', d.vote_count))})</small>` : ''}` : ''],
+      [t('fact_rated'), esc(cert)],
+      [t('fact_runtime'), run ? esc(t('min', run)) : ''],
+      [t('fact_seasons'), type === 'tv' && d.number_of_seasons ? esc(t('seasons', d.number_of_seasons, d.number_of_episodes)) : ''],
+      [t('fact_released'), esc(d.release_date || d.first_air_date ? fmtDate(d.release_date || d.first_air_date, { dateStyle: 'long' }) : '')],
+      [t('fact_status'), esc(d.status || '')],
+      [t('orig_title'), origTitle && origTitle !== title ? esc(origTitle) : ''],
+    ].filter(([, v]) => v);
     const pr = pv.results?.[s.country];
     const trailerKey = pickTrailer(d.videos?.results);
     const recs = (d.recommendations?.results || []).filter(x => x.id !== d.id).slice(0, 12).map(x => ({ ...x, media_type: type }));
     const clip = { id: d.id, media_type: type, title, poster_path: d.poster_path, release_date: d.release_date, first_air_date: d.first_air_date };
-    $app.innerHTML = `<div class="detail"><div class="p">${poster(d.poster_path, 'w500')}</div><div>
-      <h1>${esc(title)}</h1>
-      <p class="actions"><button class="btn" id="clip"></button>${trailerKey ? `<a class="btn" href="https://www.youtube.com/watch?v=${encodeURIComponent(trailerKey)}" target="_blank" rel="noopener noreferrer">${I.external()} ${t('trailer')}</a>` : ''}</p>
-      <div class="meta">${d.vote_average ? `<span class="score inline">${I.star()}${d.vote_average.toFixed(1)}</span> ` : ''}${meta}</div>
-      <p class="meta">${esc((d.genres || []).map(g => g.name).join(', '))}</p>
-      <p>${esc(d.overview) || `<span class="note">${t('no_overview')}</span>`}</p>
-      ${cast ? `<p class="meta">${t('cast')}: ${cast}</p>` : ''}
-      <h2 class="sec">${I.tvbox()} ${esc(t('where', countryName(s.country)))}</h2>
-      <div class="chips" id="kf">${['all', ...KINDS].map(k =>
-        `<button data-k="${k}" aria-pressed="${k === kindFilter}">${t('k_' + k)}</button>`).join('')}</div>
-      <div class="prov" id="prov">${provHtml(pr, s)}</div>
-      <p class="note">${I.check()} ${t('mine_note')}</p>
-      ${worldwideHtml(pv.results)}
-      </div></div>${recs.length ? `<section class="recs"><h2 class="sec">${I.sparkle()} ${t('similar')}</h2>${grid(recs)}</section>` : ''}`;
+    $app.innerHTML = `<article class="article">
+      <header class="art-head">
+        <div class="kicker">${kicker}</div>
+        <h1 class="art-title">${esc(title)}</h1>
+        ${d.tagline ? `<p class="deck">${esc(d.tagline)}</p>` : ''}
+        ${makers || cast ? `<p class="byline">${makers ? `<span>${esc(t(type === 'movie' ? 'art_by' : 'art_created'))} <b>${makers}</b></span>` : ''}${makers && cast ? ' · ' : ''}${cast ? `<span>${esc(t('art_starring'))} <b>${cast}</b></span>` : ''}</p>` : ''}
+        <p class="actions"><button class="btn" id="clip"></button>${trailerKey ? `<a class="btn" href="https://www.youtube.com/watch?v=${encodeURIComponent(trailerKey)}" target="_blank" rel="noopener noreferrer">${I.external()} ${t('trailer')}</a>` : ''}</p>
+      </header>
+      <div class="art-body">
+        <div class="art-side">
+          <figure class="photo">${poster(d.poster_path, 'w500')}<figcaption>${esc(title)}${year ? ` (${esc(year)})` : ''} — ${esc(t('photo_credit'))}</figcaption></figure>
+          ${facts.length ? `<aside class="facts" aria-label="${esc(t('facts_title'))}"><h3>${esc(t('facts_title'))}</h3><dl>${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl></aside>` : ''}
+        </div>
+        <div class="art-main">
+          <p class="lede">${esc(d.overview) || `<span class="note">${t('no_overview')}</span>`}</p>
+          <section class="where">
+            <h2 class="sec">${I.tvbox()} ${esc(t('where', countryName(s.country)))}</h2>
+            <div class="chips" id="kf">${['all', ...KINDS].map(k =>
+              `<button data-k="${k}" aria-pressed="${k === kindFilter}">${t('k_' + k)}</button>`).join('')}</div>
+            <div class="prov" id="prov">${provHtml(pr, s)}</div>
+            <p class="note">${I.check()} ${t('mine_note')}</p>
+          </section>
+          ${worldwideHtml(pv.results)}
+        </div>
+      </div>
+      ${recs.length ? `<section class="recs"><h2 class="sec">${I.sparkle()} ${t('similar')}</h2>${grid(recs)}</section>` : ''}
+    </article>`;
     const paintClip = () => { const on = clippings.has(clip); $('#clip').innerHTML = I.bookmark(on) + ' ' + t(on ? 'clip_saved' : 'clip_add'); $('#clip').setAttribute('aria-pressed', on); };
     paintClip();
     $('#clip').onclick = () => { toast(t(clippings.toggle(clip) ? 'clip_added' : 'clip_removed')); paintClip(); };
