@@ -537,7 +537,7 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
 // 25. Picked for you: clip titles you liked, the front page follows
 {
   const yr = new Date().getFullYear();
-  const mkCtx = async (extraLs = {}) => {
+  const mkCtx = async (extraLs = {}, opt = {}) => {
     const c = await browser.newContext({ serviceWorkers: 'block' });
     const pg = await c.newPage(); pg.pe = [];
     pg.on('pageerror', e => pg.pe.push(e.message));
@@ -546,7 +546,9 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
       const u = new URL(r.request().url()), path = u.pathname;
       const film = (id, title, date) => ({ id, media_type: 'movie', title, poster_path: '/a.jpg', release_date: date, vote_average: 7, vote_count: 500, genre_ids: [35] });
       let j = { results: [] };
-      if (/\/recommendations$/.test(path)) j = { results: [film(201, 'Rec Fresh', `${yr}-01-01`), film(202, 'Rec Old', '2001-01-01'), film(101, 'Already Clipped', `${yr}-01-01`), ...Array.from({ length: 8 }, (_, i) => film(210 + i, 'Rec ' + i, `${yr - 1 - i}-06-01`))] };
+      if (opt.noRecs && /\/similar$/.test(path)) j = { results: [film(401, 'Similar Fresh', `${yr}-01-01`), film(402, 'Similar Old', '2005-01-01')] };
+      else if (opt.noRecs && /\/recommendations$/.test(path)) j = { results: [] };
+      else if (/\/recommendations$/.test(path)) j = { results: [film(201, 'Rec Fresh', `${yr}-01-01`), film(202, 'Rec Old', '2001-01-01'), film(101, 'Already Clipped', `${yr}-01-01`), ...Array.from({ length: 8 }, (_, i) => film(210 + i, 'Rec ' + i, `${yr - 1 - i}-06-01`))] };
       else if (/watch\/providers/.test(path)) j = { results: {} };
       else if (/^\/3\/(movie|tv)\/\d+$/.test(path)) j = { id: Number(path.split('/').pop()), title: 'Detail ' + path.split('/').pop(), overview: 'overview text', genres: [{ id: 35 }] };
       else if (/search\/multi/.test(path)) j = { results: [film(301, 'Found Film', '2015-01-01')] };
@@ -595,6 +597,11 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
   ok((await pg.locator('.lead-story .kicker').textContent()).includes('and 2 more'), 'picks: a title several clippings point to says so ("and 2 more")');
   await pg.waitForSelector('#picks:not([hidden]) .card .why'); ok(await pg.locator('#picks .card .why').first().innerText().then(x => x.includes('Because you clipped')), 'picks: every title below says why it was chosen');
   ok(pg.pe.length === 0, 'picks: no page errors');
+  await c.close();
+  // a niche clipping (TMDB has no recommendations) still shapes the picks, through its "similar" titles
+  [c, pg] = await mkCtx({ cl: JSON.stringify([{ id: 777, media_type: 'movie', title: 'Niche Film' }]), ts: 'true' }, { noRecs: true });
+  await pg.goto(base + '/#/'); await pg.waitForFunction(() => /Picked for you/.test(document.querySelector('.lead-story .kicker')?.textContent || ''));
+  ok((await pg.locator('.lead-story .kicker').textContent()).includes('Niche Film') && pg.pe.length === 0, 'picks: a clipping without TMDB recommendations falls back to its similar titles');
   await c.close();
 }
 

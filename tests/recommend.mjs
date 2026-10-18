@@ -1,5 +1,5 @@
 // Unit test for the "Picked for you" ranking. Run: node tests/recommend.mjs
-const { seedWeight, tasteGenres, recencyScore, qualityScore, rankPicks, diversify, keyOf, SEEDS_MAX } = await import('../js/recommend.js');
+const { seedWeight, posWeight, tasteGenres, recencyScore, qualityScore, trustScore, rankPicks, diversify, leadFirst, keyOf, SEEDS_MAX } = await import('../js/recommend.js');
 let bad = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) bad++; };
 const NOW = Date.parse('2026-10-18');
@@ -47,8 +47,36 @@ const mine = rankPicks({ seeds: [A, B], recsBySeed: recs, infoBySeed: info, onMi
 ok(mine.find(x => x.item.id === 12).score > r.find(x => x.item.id === 12).score, 'a title on my services gets a bonus');
 ok(rankPicks({ seeds: [], recsBySeed: new Map(), now: NOW }).length === 0 && rankPicks({ seeds: [A], recsBySeed: new Map(), now: NOW }).length === 0, 'no clippings or no recommendations: nothing to rank');
 ok(rankPicks({ seeds: [A], recsBySeed: new Map([[keyOf('movie', 1), [null, {}, { id: 'x' }, mk(5)]]]), now: NOW }).length === 1, 'malformed recommendation entries are skipped');
-const same = rankPicks({ seeds: [A], recsBySeed: new Map([[keyOf('movie', 1), [mk(30), mk(20)]]]), now: NOW });
-ok(same[0].item.id === 20, 'ties break by id: the order is stable');
+const order = rankPicks({ seeds: [A], recsBySeed: new Map([[keyOf('movie', 1), [mk(30), mk(20)]]]), now: NOW });
+ok(order[0].item.id === 30, "TMDB's own order counts: its first recommendation beats its second (all else equal)");
+ok(posWeight(0) === 1 && posWeight(5) === 0.5 && posWeight(19) < posWeight(5), 'position weight falls along the list');
+ok(trustScore({ vote_count: 0 }) < 0.4 && trustScore({ vote_count: 40 }) > 0.6 && trustScore({ vote_count: 40 }) < 0.7 && trustScore({ vote_count: 600 }) === 1 && trustScore({}) === trustScore({ vote_count: 0 }), 'trust: few votes count for little, 500+ votes for full');
+const empty = rankPicks({ seeds: [A, { id: 9, media_type: 'movie', title: 'Nothing' }], recsBySeed: new Map([[keyOf('movie', 1), [mk(60)]]]), infoBySeed: info, now: NOW });
+const alone = rankPicks({ seeds: [A], recsBySeed: new Map([[keyOf('movie', 1), [mk(60)]]]), infoBySeed: info, now: NOW });
+ok(Math.abs(empty[0].score - alone[0].score) < 1e-9, 'a clipping TMDB knows nothing about does not weaken the others');
+
+// keywords and language
+const kwSeed = new Map([[keyOf('movie', 1), [500, 501]]]);
+const kwRecs = new Map([[keyOf('movie', 1), [mk(70, { genre_ids: [35] }), mk(71, { genre_ids: [35] })]]]);
+const kw1 = rankPicks({ seeds: [A], recsBySeed: kwRecs, keywords: new Map([...kwSeed, [keyOf('movie', 70), [900]], [keyOf('movie', 71), [500, 501]]]), now: NOW });
+ok(kw1[0].item.id === 71, 'candidates that share the clipping\'s keywords come first (same position and genres)');
+const lg = rankPicks({ seeds: [A], recsBySeed: new Map([[keyOf('movie', 1), [mk(80, { original_language: 'en' }), mk(81, { original_language: 'ja' })]]]), infoBySeed: new Map([[keyOf('movie', 1), { genres: [{ id: 35 }], language: 'ja' }]]), now: NOW });
+ok(lg[0].item.id === 81 || lg[0].item.id === 80 && lg[0].score - lg[1].score < 0.2, 'the clipping\'s original language is a (small) plus');
+ok(lg.find(x => x.item.id === 81).score > lg.find(x => x.item.id === 80).score * 0.9, 'language fit lifts the matching title');
+
+// the reported failure: two niche clippings have no recommendations, one has a long list; a brand-new obscure title far down the list must not lead
+const tv = (id, name, date, vc, g) => ({ id, name, first_air_date: date, vote_average: 7.5, vote_count: vc, genre_ids: g, original_language: 'ja' });
+const S3 = [{ id: 1, media_type: 'tv', title: 'Niche One' }, { id: 2, media_type: 'movie', title: 'Niche Two' }, { id: 3, media_type: 'tv', title: 'Fantasy Cooking' }];
+const info3 = new Map(S3.map(x => [keyOf(x.media_type, x.id), { genres: [{ id: 16 }, { id: 35 }], language: 'ja' }]));
+const list3 = [tv(20, 'Well Known Fit', '2023-09-01', 3000, [16, 10765, 18]), tv(21, 'Also Good', '2022-01-01', 1500, [16, 10765]), ...Array.from({ length: 10 }, (_, i) => tv(30 + i, 'Filler ' + i, '2020-01-01', 200, [16, 10765])), tv(99, 'Brand New Obscure', '2025-10-01', 40, [16, 10765, 35])];
+const r3 = rankPicks({ seeds: S3, recsBySeed: new Map([[keyOf('tv', 1), []], [keyOf('movie', 2), []], [keyOf('tv', 3), list3]]), infoBySeed: info3, now: NOW });
+ok(r3[0].item.id === 20 && r3.findIndex(x => x.item.id === 99) > 1, 'a well-known title at the top of TMDB\'s list beats a brand-new obscure one far down it');
+
+// lead story: prefer one enough people rated well
+const L = [{ item: { id: 1, vote_count: 12, vote_average: 8 } }, { item: { id: 2, vote_count: 900, vote_average: 7.4 } }, { item: { id: 3, vote_count: 900, vote_average: 7 } }];
+ok(leadFirst(L).map(x => x.item.id).join() === '2,1,3', 'leadFirst: a well-rated, widely voted title moves ahead of an obscure first place');
+ok(leadFirst([L[1], L[0], L[2]]).map(x => x.item.id).join() === '2,1,3', 'leadFirst: leaves the order alone when the first already qualifies');
+ok(leadFirst([L[0], { item: { id: 4, vote_count: 5, vote_average: 9 } }]).map(x => x.item.id).join() === '1,4' && leadFirst([]).length === 0, 'leadFirst: unchanged when nothing qualifies, safe on empty');
 
 // adult titles and picture-less titles
 const adult = rankPicks({ seeds: [A], recsBySeed: new Map([[keyOf('movie', 1), [mk(40, { adult: true }), mk(41)]]]), now: NOW });

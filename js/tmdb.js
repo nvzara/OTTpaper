@@ -57,3 +57,6 @@ export const providerList = (type, region) => api(`/watch/providers/${type}`, { 
 // For "Picked for you": what TMDB recommends after a title, and the title's genres (a light call, cached a week).
 export const recommendations = (type, id) => api(`/${type}/${id}/recommendations`, {}, 3 * DAY);
 export const basic = (type, id) => api(`/${type}/${id}`, {}, 7 * DAY);
+// Used when TMDB has few recommendations for a niche title, and for the keyword part of the reader's taste.
+export const similar = (type, id) => api(`/${type}/${id}/similar`, {}, 3 * DAY);
+export const keywords = async (type, id) => { const d = await api(`/${type}/${id}/keywords`, {}, 7 * DAY); return (d.keywords || d.results || []).map(k => k?.id).filter(Number.isInteger); };
