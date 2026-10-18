@@ -9,9 +9,9 @@ import { $, $app, esc, grid, errView, pageHead, empty, viewGuard } from '../ui.j
 export function clippingsView() {
   const l = clippings.list();
   $app.innerHTML = pageHead({ kicker: t('clips_kicker'), title: t('clips_title'), deck: t('clips_sub'), extra: l.length ? `<p class="byline">${esc(t('clips_count', l.length))}</p>` : '' }) +
-    (l.length ? `<p class="actions"><button class="btn primary" id="adv">${I.sparkle()} ${t('adv_btn')}</button><button class="btn" id="print">${I.download()} ${t('print_btn')}</button></p>
+    (l.length ? `<p class="actions"><button class="btn primary" id="adv">${I.sparkle()} ${t('adv_btn')}</button><button class="btn" id="print">${I.download()} ${t('print_btn')}</button><a class="btn" href="#/?taste">${I.scissors()} ${t('taste_more')}</a></p>
       <p class="print-only">${esc(t('print_title', l.length))}</p><div id="advOut" aria-live="polite"></div><div class="clips">${grid(l)}</div>`
-      : empty(t('clips_empty')));
+      : empty(t('clips_empty')) + `<p class="actions"><a class="btn primary" href="#/?taste">${I.scissors()} ${t('taste_more')}</a></p>`);
   if (l.length) { $('#adv').onclick = () => advise(l); $('#print').onclick = () => window.print(); }
 }
 async function advise(clips) {

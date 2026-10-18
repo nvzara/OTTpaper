@@ -99,6 +99,8 @@ export const recentViews = hist('rv', 20, cleanTitle);
 // Tonight taste profile: stored as plain data, cleaned by js/tonight.js when read; only small JSON objects are accepted here.
 const plainObj = v => v && typeof v === 'object' && !Array.isArray(v) && JSON.stringify(v).length < 2000 ? v : {};
 export const tonightTaste = { get: () => plainObj(get('tp', {})), set: v => set('tp', plainObj(v)) };
+// "Clip a few titles you liked" invitation on the front page: dismissed once the reader finishes or says "maybe later".
+export const tasteIntro = { skipped: () => get('ts', false) === true, skip: () => set('ts', true) };
 // The publisher's note is open on the first visit to the front page, then folded to one line.
 export const noticeSeen = { get: () => get('ns', false), set: () => set('ns', true) };
 

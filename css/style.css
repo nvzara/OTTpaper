@@ -294,6 +294,20 @@ a.pill:hover{border-color:var(--rule)}
 .wire-sec .sec .n{margin-left:0}
 
 /* ---- Tonight ---- */
+.taste{margin:0 0 1.75rem;padding:1rem 0 1.25rem;border-top:3px double var(--rule);border-bottom:1px solid var(--hair)}
+.taste-h{font:900 clamp(1.5rem,3.4vw,2.2rem)/1.1 var(--hf);margin:.15rem 0 .4rem}
+.taste .deck{max-width:42rem;margin:0 0 1rem}
+.tsearch{display:flex;gap:.5rem;max-width:30rem;margin:0 0 1.1rem}
+.tsearch input{flex:1;min-width:0}
+.tgrid{grid-template-columns:repeat(auto-fill,minmax(7.5rem,1fr));gap:1.25rem 1rem}
+.tile{background:none;border:0;padding:0;font:inherit;text-align:left;cursor:pointer;color:inherit}
+.tile:not([aria-pressed=true]) .avail{display:none}
+.tile[aria-pressed=true] .p{outline:3px solid var(--ok);outline-offset:-3px}
+.tile[aria-pressed=true] img{filter:none}
+.taste-act{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin:1.25rem 0 0}
+.taste-act #tCount{flex:1 1 8rem;font:700 .72rem/1.3 var(--sans);text-transform:uppercase;letter-spacing:var(--track);color:var(--mut)}
+.picks{margin:0 0 2rem}
+.second .why{font:italic .8rem/1.35 var(--bf);color:var(--mut);margin:.3rem 0 0}
 .picker{max-width:46rem;margin:0 auto 1.5rem;border-top:2px solid var(--rule);border-bottom:2px solid var(--rule)}
 .picker .row{display:grid;grid-template-columns:7rem minmax(0,1fr);align-items:baseline;border-bottom:1px dotted var(--hair)}
 .picker .row>.lbl{padding:.65rem 0}

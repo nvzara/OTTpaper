@@ -79,7 +79,7 @@ await page.click('[data-t=trending]'); await page.waitForSelector('.card');
 ok(await page.evaluate(() => document.documentElement.dataset.page) === 'front' && await page.locator('#navHome[aria-current=page]').count() === 1 && await page.locator('main h1').count() === 1, 'front page: full nameplate, current section marked, one page heading');
 
 // 4. detail + my OTT
-await page.click('.card');
+await page.click('.listings a.card');
 await page.waitForSelector('.pill');
 ok((await page.locator('.pill.mine').allInnerTexts()).join().includes('Wavve'), 'my OTT highlighted');
 ok((await page.locator('#prov .pill').first().innerText()).includes('Wavve'), 'my OTT sorted first');
@@ -243,7 +243,7 @@ await langCase('en-US', async (pg, reqs) => {
   ok(await pg.evaluate(() => document.title.includes('配信')), 'document title translated');
   await pg.click('#start'); await pg.waitForSelector('.card');
   ok(reqs.some(u => u.includes('language=ja-JP')), 'content requested in ja-JP');
-  await pg.click('.card'); await pg.waitForSelector('.article');
+  await pg.click('.listings a.card'); await pg.waitForSelector('.article');
   await pg.waitForFunction(() => document.body.textContent.includes('English fallback overview'));
   ok(true, 'missing overview falls back to English');
   await pg.click('#navSet'); await pg.waitForSelector('#lang');
@@ -531,6 +531,70 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
   slow = true;
   await pg.goBack(); await pg.waitForSelector('#results .card'); await pg.waitForFunction(y => Math.abs(scrollY - y) < 5, before, { timeout: 8000 }).catch(() => {});
   ok(Math.abs(await pg.evaluate(() => scrollY) - before) < 5 && before > 300, 'Back returns to the previous scroll position');
+  await c.close();
+}
+
+// 25. Picked for you: clip titles you liked, the front page follows
+{
+  const yr = new Date().getFullYear();
+  const mkCtx = async (extraLs = {}) => {
+    const c = await browser.newContext({ serviceWorkers: 'block' });
+    const pg = await c.newPage(); pg.pe = [];
+    pg.on('pageerror', e => pg.pe.push(e.message));
+    await pg.addInitScript(([st, ls]) => { if (!localStorage.getItem('settings')) localStorage.setItem('settings', JSON.stringify(st)); for (const [k, v] of Object.entries(ls)) if (!localStorage.getItem(k)) localStorage.setItem(k, v); }, [{ apiKey: 'k', onboarded: true, lang: 'en', country: 'KR', myOtts: [] }, extraLs]);
+    await pg.route('https://api.themoviedb.org/**', r => {
+      const u = new URL(r.request().url()), path = u.pathname;
+      const film = (id, title, date) => ({ id, media_type: 'movie', title, poster_path: '/a.jpg', release_date: date, vote_average: 7, vote_count: 500, genre_ids: [35] });
+      let j = { results: [] };
+      if (/\/recommendations$/.test(path)) j = { results: [film(201, 'Rec Fresh', `${yr}-01-01`), film(202, 'Rec Old', '2001-01-01'), film(101, 'Already Clipped', `${yr}-01-01`), ...Array.from({ length: 8 }, (_, i) => film(210 + i, 'Rec ' + i, `${yr - 1 - i}-06-01`))] };
+      else if (/watch\/providers/.test(path)) j = { results: {} };
+      else if (/^\/3\/(movie|tv)\/\d+$/.test(path)) j = { id: Number(path.split('/').pop()), title: 'Detail ' + path.split('/').pop(), overview: 'overview text', genres: [{ id: 35 }] };
+      else if (/search\/multi/.test(path)) j = { results: [film(301, 'Found Film', '2015-01-01')] };
+      else if (/trending|popular/.test(path)) j = { results: [film(101, 'Liked One', '2015-01-01'), film(102, 'Liked Two', '2016-01-01'), film(103, 'Liked Three', '2017-01-01')] };
+      r.fulfill({ json: j });
+    });
+    await pg.route(/image\.tmdb/, r => r.fulfill({ status: 204 }));
+    await pg.route('**/news/news.*.json', r => r.fulfill({ status: 404 }));
+    return [c, pg];
+  };
+  // first-time visitor
+  let [c, pg] = await mkCtx();
+  await pg.goto(base + '/#/'); await pg.waitForSelector('#taste .tile');
+  ok(await pg.locator('#taste .tile').count() >= 3 && await pg.locator('#tDone').isDisabled(), 'picks: a first visit invites the reader to clip titles they liked');
+  await pg.click('#taste .tile[data-k="movie:101"]');
+  ok(await pg.locator('#taste .tile[data-k="movie:101"]').getAttribute('aria-pressed') === 'true' && (await pg.locator('#tCount').innerText()).includes('1') && await pg.locator('#tDone').isEnabled(), 'picks: pressing a title clips it (pressed state, count, "See my picks" enabled)');
+  ok(await pg.evaluate(() => JSON.parse(localStorage.getItem('cl')).map(x => x.id).join()) === '101', 'picks: the clipping is saved');
+  await pg.fill('#tQ', 'film'); await pg.press('#tQ', 'Enter'); await pg.waitForSelector('#taste .tile[data-k="movie:301"]');
+  ok(await pg.locator('#taste .tile').count() === 1, 'picks: the panel can search for a title');
+  await pg.click('#tDone');
+  await pg.waitForFunction(() => /Picked for you/.test(document.querySelector('.lead-story .kicker')?.textContent || ''));
+  ok(await pg.locator('#taste').count() === 0, 'picks: the invitation closes when done');
+    ok((await pg.locator('.lead-story .kicker').textContent()).includes('Because you clipped “Liked One”'), 'picks: the lead says which clipping it follows');
+  const leadHref = await pg.locator('.lead-story .lead-h a').getAttribute('href');
+  ok(leadHref === '#/title/movie/201', 'picks: newer title wins when relevance is equal (2001 release ranks below this year\'s)');
+  const allHrefs = await pg.evaluate(() => [...document.querySelectorAll('#lead a, #picks a')].map(a => a.getAttribute('href')));
+  ok(!allHrefs.includes('#/title/movie/101') && allHrefs.includes('#/title/movie/202'), 'picks: clipped titles are not suggested again; other related titles are');
+  await pg.reload(); await pg.waitForSelector('.lead-story .kicker');
+  await pg.waitForFunction(() => /Picked for you/.test(document.querySelector('.lead-story .kicker')?.textContent || ''));
+  ok(await pg.locator('#taste').count() === 0, 'picks: the invitation does not come back after it was answered');
+  await pg.goto(base + '/#/clippings'); await pg.waitForSelector('a[href="#/?taste"]'); await pg.click('a[href="#/?taste"]'); await pg.waitForSelector('#taste .tile');
+  ok(true, 'picks: the clippings page can reopen the invitation');
+  await pg.click('#tLater'); await pg.waitForFunction(() => !document.querySelector('#taste'));
+  ok(await pg.evaluate(() => location.hash) === '#/' && pg.pe.length === 0, 'picks: postponing closes it and cleans the address' + (pg.pe.length ? ': ' + pg.pe[0] : ''));
+  await c.close();
+  // "maybe later" with nothing clipped: the usual trending lead stays
+  [c, pg] = await mkCtx();
+  await pg.goto(base + '/#/'); await pg.waitForSelector('#taste .tile'); await pg.click('#tLater');
+  await pg.waitForSelector('.lead-story .kicker');
+  ok(!/Picked for you/.test(await pg.locator('.lead-story .kicker').textContent()) && await pg.locator('#picks').isHidden(), 'picks: with nothing clipped the front page keeps today\'s trending lead');
+  await c.close();
+  // existing reader with clippings: picks at once, no invitation
+  [c, pg] = await mkCtx({ cl: JSON.stringify([{ id: 101, media_type: 'movie', title: 'Liked One' }, { id: 102, media_type: 'movie', title: 'Liked Two' }, { id: 103, media_type: 'movie', title: 'Liked Three' }]) });
+  await pg.goto(base + '/#/'); await pg.waitForFunction(() => /Picked for you/.test(document.querySelector('.lead-story .kicker')?.textContent || ''));
+  ok(await pg.locator('#taste').count() === 0, 'picks: a reader with three clippings gets picks at once, without the invitation');
+  ok((await pg.locator('.lead-story .kicker').textContent()).includes('and 2 more'), 'picks: a title several clippings point to says so ("and 2 more")');
+  await pg.waitForSelector('#picks:not([hidden]) .card .why'); ok(await pg.locator('#picks .card .why').first().innerText().then(x => x.includes('Because you clipped')), 'picks: every title below says why it was chosen');
+  ok(pg.pe.length === 0, 'picks: no page errors');
   await c.close();
 }
 

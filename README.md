@@ -44,7 +44,7 @@ js/icons.js          original inline SVG icons
 scripts/             build-time tools: fetch-news.mjs (RSS -> news.json), rss.mjs (parser)
 news/feeds.json      news sources + OTT keywords
 docs/                PLAN.md, ROADMAP.md, ATTRIBUTION.md (third-party credits & licensing rules)
-tests/               smoke (browser), i18n, news, security, advisor, tonight, filters, contrast
+tests/               smoke (browser), i18n, news, security, advisor, tonight, filters, recommend, contrast
 ```
 
 Pure-logic modules (advisor, tonight, filters, rss) have no DOM/network access and are unit-tested in Node.
@@ -65,7 +65,7 @@ After moving code between modules, run an `eslint` `no-undef`/`no-unused-vars` c
 - Clippings: save titles from the title page; stored locally, included in backups, kept when you delete history. Press `/` anywhere to jump to search.
 - Title pages: trailer link (opens YouTube in a new tab — no embeds, nothing loaded from YouTube until you click) and a "You may also like" row of TMDB recommendations.
 - Tonight (`#/tonight`): choose type, mood and length; OTTpaper asks TMDB for popular titles available on *your* services (TMDB's own provider filter) and picks one; "Another one" re-rolls.
-- Today's lead: a front-page story on Home, one pick per day from trending titles, preferring ones on your own services.
+- Picked for you: the front page is built from your clippings. A first visit invites you to clip a few titles you liked (search or pick from today's popular titles); the lead story and the picks below are titles related to your clippings (TMDB recommendations), ranked by relevance to your taste first and release date second, with a small bonus for titles on your own services, each with the clipping it follows. Without clippings the front page keeps today's trending lead.
 - Accessibility: contrast of every theme is checked automatically (WCAG AA), keyboard skip link, labelled section links, selected options marked by underline or check (not colour alone), reduced-motion support; friendly offline / rate-limit messages.
 - Search suggestions from your own recent searches (a custom index panel under the search box: filter as you type, arrow keys, remove one / clear all), "skip to content" link, and a print edition of your clippings (print stylesheet).
 - Search filters: decade and sort (relevance / newest / top rated) on top of the "on my services" filter; the Wire has per-service chips.
@@ -78,7 +78,7 @@ After moving code between modules, run an `eslint` `no-undef`/`no-unused-vars` c
 
 ## Tests
 
-Run before every push: `node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && node tests/store.mjs && node tests/contrast.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
+Run before every push: `node tests/i18n.mjs && node tests/news.mjs && node tests/security.mjs && node tests/advisor.mjs && node tests/tonight.mjs && node tests/filters.mjs && node tests/store.mjs && node tests/recommend.mjs && node tests/contrast.mjs && NODE_PATH=$(npm root -g) node tests/smoke.mjs` (requires `playwright` and Chromium; no network needed).
 
 ## License
 

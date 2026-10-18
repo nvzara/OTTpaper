@@ -30,6 +30,7 @@ jobs:
           node tests/tonight.mjs
           node tests/filters.mjs
           node tests/store.mjs
+          node tests/recommend.mjs
           node tests/contrast.mjs
           mkdir -p _site/news
           cp -r index.html sw.js manifest.webmanifest icons css js fonts LICENSE _site/

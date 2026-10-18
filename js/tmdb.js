@@ -54,3 +54,6 @@ export const providers = (type, id) => api(`/${type}/${id}/watch/providers`, {},
 export const overviewEn = async (type, id) => (await api(`/${type}/${id}`, { language: 'en-US' }, 7 * DAY)).overview || '';
 export const discover = (type, params) => api(`/discover/${type}`, params, DAY / 4);
 export const providerList = (type, region) => api(`/watch/providers/${type}`, { watch_region: region }, 7 * DAY);
+// For "Picked for you": what TMDB recommends after a title, and the title's genres (a light call, cached a week).
+export const recommendations = (type, id) => api(`/${type}/${id}/recommendations`, {}, 3 * DAY);
+export const basic = (type, id) => api(`/${type}/${id}`, {}, 7 * DAY);

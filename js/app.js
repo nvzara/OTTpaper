@@ -59,7 +59,7 @@ function route() {
   else if (parts[0] === 'clippings') clippingsView();
   else if (parts[0] === 'tonight') tonightView();
   else if (parts[0] === 'title') detailView(parts[1], parts[2]);
-  else home();
+  else home(new URLSearchParams(qs).has('taste'));
 }
 hooks.applyLang = applyLang;
 hooks.route = route;

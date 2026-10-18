@@ -14,7 +14,8 @@ Keep en/ko/ja in sync; list new files under `js/`, `css/`, `fonts/` in `sw.js`.
 - Title page laid out as a newspaper article: headline, deck, byline, "streaming in" line, photo + caption, fact sheet, where-to-watch listings by type, worldwide availability, trailer link, related titles
 - Country editions of the news wire (per-country files; local-language and worldwide sections)
 - Home front page: today's lead story, secondary stories, right rail (publisher's note, inside index, recently viewed, latest headlines), trending / popular / upcoming listings
-- Tonight picker (type, mood, length; filtered to my services)
+- Tonight picker (type, several moods, excluded genres, length, era, rating, original language, order; filtered to my services; remembered)
+- Picked for you: front page built from your clippings (invitation to clip titles on a first visit)
 - Clippings (local watchlist) with subscription advisor and print edition
 - Welcome onboarding, settings (country, language, services, theme, font, size), validated backup/restore
 - Languages: English, Korean, Japanese (UI and TMDB content)
