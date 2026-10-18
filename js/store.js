@@ -96,6 +96,9 @@ const rsBase = hist('rs', 10, cleanQuery);
 // "Dune" and "dune " are the same search: one entry, the latest spelling.
 export const recentSearch = { ...rsBase, add: q => { const c = cleanQuery(q); if (c) rsBase.add(c.trim(), sameQuery); } };
 export const recentViews = hist('rv', 20, cleanTitle);
+// Tonight taste profile: stored as plain data, cleaned by js/tonight.js when read; only small JSON objects are accepted here.
+const plainObj = v => v && typeof v === 'object' && !Array.isArray(v) && JSON.stringify(v).length < 2000 ? v : {};
+export const tonightTaste = { get: () => plainObj(get('tp', {})), set: v => set('tp', plainObj(v)) };
 // The publisher's note is open on the first visit to the front page, then folded to one line.
 export const noticeSeen = { get: () => get('ns', false), set: () => set('ns', true) };
 
@@ -123,7 +126,7 @@ export function buildBackup({ includeKey }) {
   if (!includeKey) s.apiKey = '';
   return {
     app: 'OTTpaper', version: 1, exportedAt: new Date().toISOString(), includesApiKey: !!(includeKey && s.apiKey),
-    settings: s, recentSearch: recentSearch.list(), recentViews: recentViews.list(), clippings: clippings.list(),
+    settings: s, recentSearch: recentSearch.list(), recentViews: recentViews.list(), clippings: clippings.list(), tonight: tonightTaste.get(),
   };
 }
 
@@ -147,13 +150,12 @@ export function restoreBackup(raw) {
   // Lists from a file are cleaned like stored ones: malformed entries dropped, duplicates merged, size limits applied.
   if (Array.isArray(raw.recentSearch)) set('rs', uniq(raw.recentSearch.map(cleanQuery).filter(Boolean).map(x => x.trim()).filter(Boolean), sameQuery).slice(0, 10));
   if (Array.isArray(raw.clippings)) set('cl', uniq(raw.clippings.map(cleanTitle).filter(Boolean), sameTitle).slice(0, 300));
+  if (raw.tonight && typeof raw.tonight === 'object') tonightTaste.set(raw.tonight);
   if (Array.isArray(raw.recentViews)) set('rv', uniq(raw.recentViews.map(cleanTitle).filter(Boolean), sameTitle).slice(0, 20));
 }
 
 export function clearUserData() {
-  const keep = localStorage.getItem('settings');
-  const clips = localStorage.getItem('cl');
+  const kept = ['settings', 'cl', 'tp'].map(k => [k, localStorage.getItem(k)]);   // settings, clippings and taste are kept
   Object.keys(localStorage).forEach(k => localStorage.removeItem(k));
-  if (keep) localStorage.setItem('settings', keep);
-  if (clips) localStorage.setItem('cl', clips);
+  kept.forEach(([k, v]) => { if (v) localStorage.setItem(k, v); });
 }

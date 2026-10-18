@@ -298,6 +298,12 @@ a.pill:hover{border-color:var(--rule)}
 .picker .row{display:grid;grid-template-columns:7rem minmax(0,1fr);align-items:baseline;border-bottom:1px dotted var(--hair)}
 .picker .row>.lbl{padding:.65rem 0}
 .picker .chips{margin:0}
+.picker .fine>summary{display:flex;align-items:center;gap:.5rem;cursor:pointer;list-style:none;padding:.6rem 0;border-bottom:1px dotted var(--hair);font:700 .68rem/1.3 var(--sans);text-transform:uppercase;letter-spacing:var(--track)}
+.picker .fine>summary::-webkit-details-marker{display:none}
+.picker .fine>summary::after{content:"+";margin-left:auto;font:400 1.15rem/1 var(--sans);color:var(--mut)}
+.picker .fine[open]>summary::after{content:"\2212"}
+.picker .fine .n{color:var(--acc);font-variant-numeric:tabular-nums}
+.picker .fine .n:empty{display:none}
 .picker .go{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem;padding:.75rem 0}
 .picker .go .actions{margin:0}
 #tnOut .lead-story{border-bottom:3px double var(--rule);padding-bottom:1rem}

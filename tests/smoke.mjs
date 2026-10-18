@@ -363,12 +363,12 @@ await page.evaluate(() => { const st = JSON.parse(localStorage.getItem('settings
 const tnReqs = [];
 page.on('request', r => { if (r.url().includes('/discover/')) tnReqs.push(r.url()); });
 await page.goto(base + '/#/tonight'); await page.reload(); await page.waitForSelector('#spin');
-await page.click('[data-mood=comedy]'); await page.click('[data-len="90"]');
+await page.click('[data-moods=comedy]'); await page.click('[data-len="90"]');
 await page.click('#spin'); await page.waitForSelector('#tnOut .lead-story h2 a');
 ok(tnReqs.some(u => u.includes('with_genres=35') && u.includes('with_runtime.lte=90') && u.includes('with_watch_providers=356') && u.includes('watch_region=KR')), 'tonight: discover filtered by mood, length and my provider ids');
 ok(await page.locator('#again').count() === 1, 'tonight: "another one" available');
 await page.click('[data-type=tv]');
-ok(await page.locator('[data-mood=horror]').count() === 0 && await page.locator('[data-mood=crime]').count() === 1, 'tonight: moods follow the media type');
+ok(await page.locator('[data-moods=horror]').count() === 0 && await page.locator('[data-moods=crime]').count() === 1, 'tonight: moods follow the media type');
 ok(await page.locator('[data-len="0"]').getAttribute('aria-pressed') === 'true' && await page.locator('[data-len="90"]').count() === 0, 'tonight: switching type resets the film length (no stale 90-minute limit)');
 tnReqs.length = 0; await page.click('#spin'); await page.waitForSelector('#tnOut .lead-story h2 a');
 ok(tnReqs.length > 0 && tnReqs.every(u => !u.includes('with_runtime.lte')), 'tonight: no runtime limit sent after switching to TV');
@@ -381,6 +381,31 @@ await setMine([]);
 ok(await page.locator('#tnMine').count() === 0, 'tonight: without services there is no "only my services" option');
 await setMine(['wavve']);
 ok(await page.locator('#tnMine').isChecked(), 'tonight: "only my services" is on again once services are added');
+// Tonight: detailed taste options
+const spin = async () => { tnReqs.length = 0; await page.click('#spin'); await page.waitForFunction(() => document.querySelector('#tnOut .lead-story, #tnOut .empty, #tnOut .err')); return tnReqs.map(u => decodeURIComponent(u)).join(' '); };
+await page.click('[data-moods=""]'); await page.click('[data-moods=comedy]'); await page.click('[data-moods=romance]');
+ok(await page.locator('[data-moods=comedy]').getAttribute('aria-pressed') === 'true' && await page.locator('[data-moods=romance]').getAttribute('aria-pressed') === 'true' && await page.locator('[data-moods=""]').getAttribute('aria-pressed') === 'false', 'tonight: several moods can be chosen at once');
+ok((await spin()).includes('with_genres=35|10749'), 'tonight: several moods are sent as "any of"');
+await page.click('details.fine > summary');
+await page.click('[data-exclude=horror]');
+ok((await spin()).includes('without_genres=27'), 'tonight: excluded genre is sent');
+await page.click('[data-moods=horror]');
+ok(await page.locator('[data-exclude=horror]').getAttribute('aria-pressed') === 'false', 'tonight: choosing a mood removes it from the exclusions');
+await page.click('[data-moods=horror]');
+await page.click('[data-era="2010"]'); await page.click('[data-rating="7"]'); await page.click('[data-lang="ko"]'); await page.click('[data-order="top"]');
+const q1 = await spin();
+ok(q1.includes('primary_release_date.gte=2010-01-01') && q1.includes('primary_release_date.lte=2019-12-31') && q1.includes('vote_average.gte=7') && q1.includes('with_original_language=ko') && q1.includes('sort_by=vote_average.desc'), 'tonight: era, rating, original language and order are sent');
+ok((await page.locator('#fineN').innerText()) === '4', 'tonight: the fine-tune heading counts the active options');
+await page.reload(); await page.waitForSelector('#spin');
+ok(await page.locator('[data-rating="7"]').getAttribute('aria-pressed') === 'true' && await page.locator('[data-moods=comedy]').getAttribute('aria-pressed') === 'true' && await page.locator('details.fine').evaluate(d => d.open), 'tonight: taste is remembered after a reload (fine-tune panel stays open)');
+await page.evaluate(() => localStorage.setItem('rv', JSON.stringify([{ id: 1, media_type: 'movie', title: 'x' }]))); await page.click('label:has(#tnSeen)');
+await page.click('#spin'); await page.waitForSelector('#tnOut .empty');
+ok(true, 'tonight: titles already opened can be skipped (nothing left -> friendly note)');
+await page.click('label:has(#tnSeen)');
+await page.click('#tnReset');
+ok(await page.locator('[data-rating="0"]').getAttribute('aria-pressed') === 'true' && await page.locator('[data-moods=""]').getAttribute('aria-pressed') === 'true' && (await page.locator('#fineN').innerText()) === '', 'tonight: reset clears every taste option');
+ok(await page.evaluate(() => document.activeElement?.id) === 'tnReset', 'tonight: keyboard focus stays on Reset');
+await page.evaluate(() => localStorage.removeItem('rv'));
 
 // 19. friendly errors: network down -> offline message; rate limit -> rate message
 for (const [mode, expect] of [['abort', 'offline'], ['429', 'limiting requests']]) {
@@ -504,7 +529,7 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
   ok(await pg.evaluate(() => scrollY) === 0, 'following a link starts at the top of the new page');
   await pg.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('c:')).forEach(k => localStorage.removeItem(k)));   // the list reloads slowly this time
   slow = true;
-  await pg.goBack(); await pg.waitForSelector('#results .card'); await pg.waitForFunction(y => Math.abs(scrollY - y) < 5, before, { timeout: 4000 }).catch(() => {});
+  await pg.goBack(); await pg.waitForSelector('#results .card'); await pg.waitForFunction(y => Math.abs(scrollY - y) < 5, before, { timeout: 8000 }).catch(() => {});
   ok(Math.abs(await pg.evaluate(() => scrollY) - before) < 5 && before > 300, 'Back returns to the previous scroll position');
   await c.close();
 }

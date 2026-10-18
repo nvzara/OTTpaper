@@ -1,6 +1,6 @@
 // Unit test for the "Tonight" picker logic. Run: node tests/tonight.mjs
 globalThis.localStorage = { getItem: () => null, setItem() {} };
-const { MOODS, resolveProviderIds, buildDiscoverParams, pickOne } = await import('../js/tonight.js');
+const { MOODS, resolveProviderIds, buildDiscoverParams, pickOne, cleanTaste, fineCount, DEFAULT_TASTE } = await import('../js/tonight.js');
 let bad = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) bad++; };
 const list = [{ provider_id: 8, provider_name: 'Netflix' }, { provider_id: 356, provider_name: 'Wavve' }, { provider_id: 9, provider_name: 'Amazon Prime Video' }, { provider_id: 1, provider_name: 'Other' }];
@@ -16,4 +16,25 @@ const res = [{ id: 1 }, { id: 2 }, { id: 3 }];
 ok(pickOne(res, new Set([1, 2]), () => 0).id === 3, 'pickOne avoids already-shown titles');
 ok(pickOne(res, new Set([1, 2, 3]), () => 0.99).id === 3, 'pickOne reuses list when all shown');
 ok(pickOne([], new Set()) === null, 'pickOne safe on empty');
+// taste options
+const m = buildDiscoverParams({ type: 'movie', moods: ['comedy', 'romance'], exclude: ['horror', 'comedy'], region: 'KR', providerIds: [] });
+ok(m.with_genres === '35|10749', 'several moods: any of them (OR)');
+ok(m.without_genres === '27', 'excluded genres sent; a wanted mood is never also excluded');
+const e = buildDiscoverParams({ type: 'movie', era: '2010', minRating: 7, lang: 'ko', region: 'KR' });
+ok(e['primary_release_date.gte'] === '2010-01-01' && e['primary_release_date.lte'] === '2019-12-31' && e['vote_average.gte'] === '7' && e.with_original_language === 'ko', 'era, minimum rating and original language');
+const et = buildDiscoverParams({ type: 'tv', era: 'old', region: 'KR' });
+ok(et['first_air_date.lte'] === '1999-12-31' && !('first_air_date.gte' in et) && !('primary_release_date.lte' in et), 'TV eras use the first-air date');
+const top = buildDiscoverParams({ type: 'movie', order: 'top', region: 'KR' });
+ok(top.sort_by === 'vote_average.desc' && top['vote_count.gte'] === '300', 'top rated needs enough votes');
+const nw = buildDiscoverParams({ type: 'tv', order: 'new', region: 'KR', today: '2026-10-18' });
+ok(nw.sort_by === 'first_air_date.desc' && nw['first_air_date.lte'] === '2026-10-18', 'newest never lists unreleased titles');
+const nwOld = buildDiscoverParams({ type: 'movie', order: 'new', era: 'old', region: 'KR', today: '2026-10-18' });
+ok(nwOld['primary_release_date.lte'] === '1999-12-31', 'newest keeps an earlier era limit');
+const plain = buildDiscoverParams({ type: 'movie', region: 'KR' });
+ok(!('without_genres' in plain) && !('vote_average.gte' in plain) && !('with_original_language' in plain) && plain.sort_by === 'popularity.desc', 'no taste options -> no extra filters');
+ok(cleanTaste(undefined).type === 'movie' && JSON.stringify(cleanTaste(null)) === JSON.stringify(DEFAULT_TASTE), 'cleanTaste: empty input gives the defaults');
+const c = cleanTaste({ type: 'tv', moods: ['crime', 'horror', 'crime', 5, 'drama'], exclude: ['drama', 'comedy', 'x'], len: 120, era: '1850', rating: 9, lang: 'xx', order: 'zzz', skipSeen: 'yes', mine: false });
+ok(c.moods.join() === 'crime,drama' && c.exclude.join() === 'comedy', 'cleanTaste: moods of the other type, duplicates, junk dropped; wanted moods leave the exclusions');
+ok(c.len === 0 && c.era === 'any' && c.rating === 0 && c.lang === '' && c.order === 'pop' && c.skipSeen === false && c.mine === false, 'cleanTaste: invalid values fall back to "no preference"');
+ok(fineCount(DEFAULT_TASTE) === 0 && fineCount({ ...DEFAULT_TASTE, exclude: ['horror'], era: '2000', rating: 6, lang: 'ja', order: 'top', skipSeen: true }) === 6, 'fineCount counts the active fine-tuning options');
 process.exit(bad ? 1 : 0);

@@ -4,7 +4,7 @@ globalThis.localStorage = { getItem: k => mem[k] ?? null, setItem: (k, v) => { m
 globalThis.sessionStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const setLang = (...l) => Object.defineProperty(globalThis, 'navigator', { value: { languages: l, language: l[0] }, configurable: true });
 setLang('en-US');
-const { COUNTRIES, defaultCountry, getSettings, recentSearch, recentViews, clippings, restoreBackup, buildBackup, ottKey } = await import('../js/store.js');
+const { COUNTRIES, defaultCountry, getSettings, recentSearch, recentViews, clippings, restoreBackup, buildBackup, ottKey, tonightTaste } = await import('../js/store.js');
 let bad = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) bad++; };
 ok(COUNTRIES.join() === 'KR,JP,US,GB,CA,AU,NZ,IE', 'supported countries: Korea, Japan, English-speaking');
@@ -54,4 +54,11 @@ ok(!('apiKey' in buildBackup({ includeKey: false }).settings) || buildBackup({ i
 let threw = false; try { restoreBackup({ app: 'Other', settings: {} }); } catch { threw = true; }
 ok(threw, 'restore: a file that is not an OTTpaper backup is refused');
 ok(ottKey(undefined) === null && ottKey(null) === null && ottKey('Netflix') === 'netflix' && ottKey('Amazon Prime Video') === 'prime', 'ottKey: provider without a name never throws; known names still match');
+mem.tp = '[1,2]'; ok(Object.keys(tonightTaste.get()).length === 0, 'tonight taste: a non-object reads as empty');
+mem.tp = 'not json'; ok(Object.keys(tonightTaste.get()).length === 0, 'tonight taste: unparseable JSON reads as empty');
+tonightTaste.set({ type: 'tv', era: '2010' }); ok(tonightTaste.get().era === '2010', 'tonight taste: saved and read back');
+ok(buildBackup({ includeKey: false }).tonight.era === '2010', 'backup includes the tonight taste');
+tonightTaste.set({}); restoreBackup({ app: 'OTTpaper', settings: {}, tonight: { type: 'movie', rating: 7 } });
+ok(tonightTaste.get().rating === 7, 'restore brings the tonight taste back');
+restoreBackup({ app: 'OTTpaper', settings: {}, tonight: 'junk' }); ok(tonightTaste.get().rating === 7, 'restore ignores a malformed taste');
 process.exit(bad ? 1 : 0);

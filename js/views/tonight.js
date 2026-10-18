@@ -1,31 +1,68 @@
 // View: Tonight picker — an evening feature: choose type / mood / length, we pick one from your services
 import * as T from '../tmdb.js';
 import { I } from '../icons.js';
-import { getSettings } from '../store.js';
-import { MOODS, resolveProviderIds, buildDiscoverParams, pickOne, LENGTHS } from '../tonight.js';
-import { t } from '../i18n.js';
+import { getSettings, recentViews, tonightTaste } from '../store.js';
+import { MOODS, resolveProviderIds, buildDiscoverParams, pickOne, LENGTHS, ERAS, RATINGS, ORIGINS, ORDERS, cleanTaste, fineCount } from '../tonight.js';
+import { t, getLang } from '../i18n.js';
 import { $, $app, esc, typeLabel, poster, grid, errView, pageHead, empty, sec, stars, lede, clip, scriptCls, skStory, yearOfItem, viewGuard } from '../ui.js';
 
-const tn = { type: 'movie', mood: '', len: 0, mine: true };
+let tn = null;   // the taste profile, loaded from storage on the first visit and saved on every change
+const save = () => tonightTaste.set(tn);
+// "Any" for the rest of the row means: nothing chosen.
 export function tonightView() {
   const s = getSettings(), hasMine = s.myOtts.length > 0;
-  if (!MOODS[tn.type][tn.mood]) tn.mood = '';
-  if (!LENGTHS[tn.type].includes(tn.len)) tn.len = 0;   // lengths differ per type (film vs episode)
-  const row = (label, name, opts, cur) => `<div class="row"><span class="lbl" id="lb-${name}">${label}</span><div class="chips" role="radiogroup" aria-labelledby="lb-${name}">${opts.map(([v, l]) => `<button data-${name}="${v}" aria-pressed="${String(cur) === String(v)}">${esc(l)}</button>`).join('')}</div></div>`;
+  tn = cleanTaste(tn || tonightTaste.get());
+  const lang = getLang();
+  const moodKeys = Object.keys(MOODS[tn.type]), fine = fineCount(tn);
+  const radio = (label, name, opts, cur) => `<div class="row"><span class="lbl" id="lb-${name}">${label}</span><div class="chips" role="radiogroup" aria-labelledby="lb-${name}">${opts.map(([v, l]) => `<button data-${name}="${v}" aria-pressed="${String(cur) === String(v)}">${esc(l)}</button>`).join('')}</div></div>`;
+  const multi = (label, name, keys, cur, any) => `<div class="row"><span class="lbl" id="lb-${name}">${label}</span><div class="chips" role="group" aria-labelledby="lb-${name}">${any ? `<button data-${name}="" aria-pressed="${!cur.length}">${esc(t('tn_any'))}</button>` : ''}${keys.map(k => `<button data-${name}="${k}" aria-pressed="${cur.includes(k)}">${esc(t('m_' + k))}</button>`).join('')}</div></div>`;
+  const langName = c => c ? (new Intl.DisplayNames([lang], { type: 'language' }).of(c) || c) : t('tn_any');
   $app.innerHTML = pageHead({ kicker: t('tn_kicker'), title: t('tn_title'), deck: t('tn_sub') }) +
     `<section class="picker">
-      ${row(t('tn_type'), 'type', [['movie', t('type_movie')], ['tv', t('type_tv')]], tn.type)}
-      ${row(t('tn_mood'), 'mood', [['', t('tn_any')], ...Object.keys(MOODS[tn.type]).map(k => [k, t('m_' + k)])], tn.mood)}
-      ${row(t('tn_length'), 'len', [[0, t('tn_any')], ...LENGTHS[tn.type].map(n => [n, t('tn_len', n)])], tn.len)}
+      ${radio(t('tn_type'), 'type', [['movie', t('type_movie')], ['tv', t('type_tv')]], tn.type)}
+      ${multi(t('tn_mood'), 'moods', moodKeys, tn.moods, true)}
+      ${radio(t('tn_length'), 'len', [[0, t('tn_any')], ...LENGTHS[tn.type].map(n => [n, t('tn_len', n)])], tn.len)}
+      <details class="fine"${fine ? ' open' : ''}><summary>${esc(t('tn_fine'))}<span class="n" id="fineN">${fine || ''}</span></summary>
+        ${multi(t('tn_exclude'), 'exclude', moodKeys, tn.exclude, false)}
+        ${radio(t('tn_era'), 'era', ERAS.map(k => [k, k === 'any' ? t('tn_any') : t('d_' + k)]), tn.era)}
+        ${radio(t('tn_rating'), 'rating', RATINGS.map(n => [n, n ? t('tn_rate', n) : t('tn_any')]), tn.rating)}
+        ${radio(t('tn_lang'), 'lang', ORIGINS.map(c => [c, langName(c)]), tn.lang)}
+        ${radio(t('tn_order'), 'order', ORDERS.map(k => [k, t('tn_sort_' + k)]), tn.order)}
+        <div class="row"><span class="lbl"></span><div class="chips"><label class="chip"><input type="checkbox" id="tnSeen"${tn.skipSeen ? ' checked' : ''}><span>${esc(t('tn_skipseen'))}</span></label><button type="button" id="tnReset">${esc(t('tn_reset'))}</button></div></div>
+      </details>
       <div class="go">${hasMine ? `<label class="chip"><input type="checkbox" id="tnMine"${tn.mine ? ' checked' : ''}><span>${t('tn_mine')}</span></label>` : '<span></span>'}
       <p class="actions"><button class="btn primary" id="spin">${I.moon()} ${t('tn_spin')}</button></p></div></section>
     <div id="tnOut" aria-live="polite"></div>`;
-  for (const k of ['type', 'mood', 'len']) document.querySelectorAll(`[data-${k}]`).forEach(b => b.onclick = () => {
-    tn[k] = k === 'len' ? +b.dataset.len : b.dataset[k];
-    if (k === 'type') { tonightView(); $('[data-type][aria-pressed=true]')?.focus(); return; }   // moods differ per type; keep the keyboard where it was
-    document.querySelectorAll(`[data-${k}]`).forEach(x => x.setAttribute('aria-pressed', x === b));
+  // Reflect the profile in the chips without redrawing (keeps keyboard focus where it is).
+  const sync = () => {
+    document.querySelectorAll('[data-moods]').forEach(b => b.setAttribute('aria-pressed', b.dataset.moods ? tn.moods.includes(b.dataset.moods) : !tn.moods.length));
+    document.querySelectorAll('[data-exclude]').forEach(b => b.setAttribute('aria-pressed', tn.exclude.includes(b.dataset.exclude)));
+    for (const k of ['len', 'era', 'rating', 'lang', 'order']) document.querySelectorAll(`[data-${k}]`).forEach(b => b.setAttribute('aria-pressed', String(tn[k]) === b.dataset[k]));
+    const n = fineCount(tn); $('#fineN').textContent = n || '';
+    save();
+  };
+  const toggle = (list, k) => list.includes(k) ? list.filter(x => x !== k) : [...list, k];
+  document.querySelectorAll('[data-type]').forEach(b => b.onclick = () => {
+    tn = cleanTaste({ ...tn, type: b.dataset.type }); save();   // moods and lengths differ per type
+    tonightView(); $('[data-type][aria-pressed=true]')?.focus();   // keep the keyboard where it was
   });
-  $('#tnMine')?.addEventListener('change', e => { tn.mine = e.target.checked; });
+  document.querySelectorAll('[data-moods]').forEach(b => b.onclick = () => {
+    const k = b.dataset.moods;
+    tn.moods = k ? toggle(tn.moods, k) : [];
+    tn.exclude = tn.exclude.filter(x => !tn.moods.includes(x));   // a mood cannot be both wanted and excluded
+    sync();
+  });
+  document.querySelectorAll('[data-exclude]').forEach(b => b.onclick = () => {
+    const k = b.dataset.exclude;
+    tn.exclude = toggle(tn.exclude, k);
+    tn.moods = tn.moods.filter(x => !tn.exclude.includes(x));
+    sync();
+  });
+  for (const k of ['len', 'era', 'rating']) document.querySelectorAll(`[data-${k}]`).forEach(b => b.onclick = () => { tn[k] = k === 'era' ? b.dataset[k] : +b.dataset[k]; sync(); });
+  for (const k of ['lang', 'order']) document.querySelectorAll(`[data-${k}]`).forEach(b => b.onclick = () => { tn[k] = b.dataset[k]; sync(); });
+  $('#tnSeen').addEventListener('change', e => { tn.skipSeen = e.target.checked; sync(); });
+  $('#tnReset').onclick = () => { tn = cleanTaste({ type: tn.type, mine: tn.mine }); save(); tonightView(); $('details.fine').open = true; $('#tnReset')?.focus(); };   // stay in the panel the reader was using
+  $('#tnMine')?.addEventListener('change', e => { tn.mine = e.target.checked; save(); });
   $('#spin').onclick = tonightSpin;
 }
 let tnList = [], tnSeen = new Set();
@@ -39,10 +76,12 @@ async function tonightSpin() {
       ids = resolveProviderIds((await T.providerList(tn.type, s.country)).results, new Set(s.myOtts));
       noprov = !ids.length;
     }
-    const params = buildDiscoverParams({ type: tn.type, mood: tn.mood, maxRuntime: tn.len || 0, region: s.country, providerIds: ids });
-    const found = ((await T.discover(tn.type, params)).results || []).slice(0, 20).map(x => ({ ...x, media_type: tn.type }));
+    const params = buildDiscoverParams({ type: tn.type, moods: tn.moods, exclude: tn.exclude, maxRuntime: tn.len || 0, region: s.country, providerIds: ids, era: tn.era, minRating: tn.rating, lang: tn.lang, order: tn.order });
+    const found = ((await T.discover(tn.type, params)).results || []).map(x => ({ ...x, media_type: tn.type }));
+    const opened = tn.skipSeen ? new Set(recentViews.list().filter(v => v.media_type === tn.type).map(v => v.id)) : null;
+    const fresh = opened ? found.filter(x => !opened.has(x.id)) : found;
     if (no !== spinNo || !alive()) return;   // a newer request has taken over (double click), or the reader left
-    tnList = found; tnSeen = new Set();
+    tnList = fresh.slice(0, 20); tnSeen = new Set();
     out.dataset.noprov = noprov ? '1' : '';
     showTonight();
   } catch (e) { if (no === spinNo && alive()) out.innerHTML = errView(e); }
