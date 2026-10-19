@@ -1,5 +1,6 @@
 // View: Title page as a newspaper article (where to watch, worldwide, trailer, recommendations)
 import * as T from '../tmdb.js';
+import { availableOnMine } from '../picks.js';
 import { I } from '../icons.js';
 import { OTTS, COUNTRIES, ottKey, getSettings, recentViews, clippings } from '../store.js';
 import { worldwideRows } from '../advisor.js';
@@ -115,9 +116,16 @@ export async function detailView(type, id) {
         ${facts.length ? `<aside class="facts" aria-label="${esc(t('facts_title'))}"><h3>${esc(t('facts_title'))}</h3><dl>${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl></aside>` : ''}
         ${worldwideHtml(pv.results)}
       </div>
-      ${recs.length ? `<section class="recs">${sec(t('similar'))}${grid(recs, null, 'strip')}</section>` : ''}
+      ${recs.length ? `<section class="recs"${s.myOtts.length ? ' hidden' : ''}>${sec(t('similar'))}${grid(recs, null, 'strip')}</section>` : ''}
     </article>`;
     const paintClip = () => { const on = clippings.has(clipItem); $('#clip').innerHTML = I.scissors() + ' ' + t(on ? 'clip_saved' : 'clip_add'); $('#clip').setAttribute('aria-pressed', on); };
+    // "More like this": only titles the reader can watch on their own services (when services are chosen).
+    if (recs.length && s.myOtts.length) availableOnMine(recs, alive, { max: 12 }).then(ok => {
+      if (!alive()) return;
+      const box = document.querySelector('.recs');
+      box?.querySelectorAll('.card').forEach(c => { if (!ok.has(c.dataset.k)) c.remove(); });
+      if (box && !box.querySelector('.card')) box.remove(); else if (box) box.hidden = false;
+    });
     paintClip();
     $('#clip').onclick = () => { toast(t(clippings.toggle(clipItem) ? 'clip_added' : 'clip_removed')); paintClip(); };
     document.querySelectorAll('#kf [data-k]').forEach(b => b.onclick = () => {

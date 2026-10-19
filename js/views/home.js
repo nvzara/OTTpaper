@@ -6,7 +6,7 @@ import { loadPicks } from '../picks.js';
 import { tasteHtml, bindTaste } from './taste.js';
 import { onMyServices, pickLead } from '../advisor.js';
 import { t, getLang } from '../i18n.js';
-import { $app, esc, typeLabel, notice, poster, grid, card, errView, $, sec, stars, lede, clip, scriptCls, skGrid, skStory, yearOfItem, httpUrl, viewGuard } from '../ui.js';
+import { $app, esc, typeLabel, notice, empty, poster, grid, card, errView, $, sec, stars, lede, clip, scriptCls, skGrid, skStory, yearOfItem, httpUrl, viewGuard } from '../ui.js';
 
 let homeTab = 'trending';
 const TABS = ['trending', 'movie', 'tv', 'upcoming'];
@@ -104,7 +104,7 @@ async function renderFront() {
     const more = rest.slice(3, 15);
     const box = $('#picks');
     if (box && more.length) {
-      box.innerHTML = sec(t('rec_title')) + `<div class="grid">${more.map(r => card({ ...r.item, _why: why(r) })).join('')}</div>`;
+      box.innerHTML = sec(t('rec_title')) + (getSettings().myOtts.length ? '' : `<p class="note">${esc(t('rec_set_services'))} <a href="#/settings">${esc(t('settings'))}</a></p>`) + `<div class="grid">${more.map(r => card({ ...r.item, _why: why(r) })).join('')}</div>`;
       box.hidden = false;
     }
   } catch { renderLead(alive); }
@@ -125,13 +125,16 @@ async function renderLead(alive) {
     }
     if (!alive()) return;
     const day = new Date().toLocaleDateString('en-CA');
-    const pick = pickLead(items, avail, day);
+    // With services chosen, only titles the reader can watch are put on the front page.
+    const pool = mine.size ? items.filter(x => avail.get(`${x.media_type}:${x.id}`) > 0) : items;
+    if (mine.size && !pool.length) { if ($('#lead')) $('#lead').innerHTML = empty(t('lead_none_mine')); return; }
+    const pick = pickLead(pool, avail, day);
     if (!pick || !$('#lead')) { el.innerHTML = ''; return; }
     const it = pick.item, d = await T.detail(it.media_type, it.id);
     if (!alive()) return;
     // Three more stories under the lead: titles on my services first, then the rest of today's trending list.
-    const rest = items.filter(x => x !== it), onMine = x => avail.get(`${x.media_type}:${x.id}`) > 0;
-    const seconds = [...rest.filter(onMine), ...rest.filter(x => !onMine(x))].slice(0, 3).map(x => ({ x, mine: onMine(x), why: '' }));
+    const rest = pool.filter(x => x !== it), onMine = x => avail.get(`${x.media_type}:${x.id}`) > 0;
+    const seconds = (mine.size ? rest : [...rest.filter(onMine), ...rest.filter(x => !onMine(x))]).slice(0, 3).map(x => ({ x, mine: onMine(x), why: '' }));
     if (!$('#lead')) return;
     $('#lead').innerHTML = frontHtml({ it, d, kicker: `${t('lead_kicker')} · ${pick.onMine ? t('lead_on') : t('lead_any')}`, on: ottNames(names.get(`${it.media_type}:${it.id}`) || []), seconds });
   } catch { if (alive()) el.innerHTML = ''; }

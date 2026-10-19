@@ -41,18 +41,33 @@ export async function loadPicks(alive = () => true) {
   });
   if (!alive()) return null;
   ranked = rank();
-  // Titles on the reader's own services get a bonus: check the best candidates (provider data is cached 3 days).
-  const mine = new Set(getSettings().myOtts), country = getSettings().country, onMine = new Map();
-  if (mine.size && ranked.length) {
-    await pool(ranked.slice(0, 24), 8, async r => {
-      try {
-        const keys = onMyServices((await T.providers(r.item.media_type, r.item.id)).results?.[country], mine);
-        if (keys.length) onMine.set(keyOf(r.item.media_type, r.item.id), keys);
-      } catch { /* no data for this title: no bonus */ }
-    });
+  // Only titles the reader can actually watch are suggested: keep those on one of the reader's own services (in their country).
+  // Candidates are checked best first until enough are found (provider data is cached 3 days).
+  const mine = new Set(getSettings().myOtts);
+  let onMine = new Map(), keep = ranked;
+  if (mine.size) {
+    onMine = await availableOnMine(ranked.map(r => r.item), alive, { need: 16, max: 80 });
     if (!alive()) return null;
-    ranked = rank(onMine);
+    keep = ranked.filter(r => onMine.has(keyOf(r.item.media_type, r.item.id)));
   }
-  const list = leadFirst(diversify(ranked, { head: 9, perSeed: 3 })).slice(0, 16).map(r => ({ ...r, mine: onMine.get(keyOf(r.item.media_type, r.item.id)) || [] }));
+  const list = leadFirst(diversify(keep, { head: 9, perSeed: 3 })).slice(0, 16).map(r => ({ ...r, mine: onMine.get(keyOf(r.item.media_type, r.item.id)) || [] }));
   return list.length ? { list } : null;
+}
+
+// Which of these titles can the reader watch on one of their own services in their country (subscription, free or ad-supported;
+// renting or buying does not count)? Returns Map("type:id" -> [service keys]). Titles are checked in order, in batches, until
+// `need` are found or `max` were checked; a title with no provider data counts as not watchable.
+export async function availableOnMine(items, alive = () => true, { need = Infinity, max = 80 } = {}) {
+  const mine = new Set(getSettings().myOtts), country = getSettings().country, found = new Map();
+  if (!mine.size) return found;
+  const todo = items.slice(0, max);
+  for (let at = 0; at < todo.length && found.size < need && alive(); at += 16) {
+    await pool(todo.slice(at, at + 16), 8, async it => {
+      try {
+        const keys = onMyServices((await T.providers(it.media_type, it.id)).results?.[country], mine);
+        if (keys.length) found.set(keyOf(it.media_type, it.id), keys);
+      } catch { /* no data for this title: not watchable as far as we know */ }
+    });
+  }
+  return found;
 }

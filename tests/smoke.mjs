@@ -541,7 +541,7 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
     const c = await browser.newContext({ serviceWorkers: 'block' });
     const pg = await c.newPage(); pg.pe = [];
     pg.on('pageerror', e => pg.pe.push(e.message));
-    await pg.addInitScript(([st, ls]) => { if (!localStorage.getItem('settings')) localStorage.setItem('settings', JSON.stringify(st)); for (const [k, v] of Object.entries(ls)) if (!localStorage.getItem(k)) localStorage.setItem(k, v); }, [{ apiKey: 'k', onboarded: true, lang: 'en', country: 'KR', myOtts: [] }, extraLs]);
+    await pg.addInitScript(([st, ls]) => { if (!localStorage.getItem('settings')) localStorage.setItem('settings', JSON.stringify(st)); for (const [k, v] of Object.entries(ls)) if (!localStorage.getItem(k)) localStorage.setItem(k, v); }, [{ apiKey: 'k', onboarded: true, lang: 'en', country: 'KR', myOtts: opt.onWavve ? ['wavve'] : [] }, extraLs]);
     await pg.route('https://api.themoviedb.org/**', r => {
       const u = new URL(r.request().url()), path = u.pathname;
       const film = (id, title, date) => ({ id, media_type: 'movie', title, poster_path: '/a.jpg', release_date: date, vote_average: 7, vote_count: 500, genre_ids: [35] });
@@ -549,7 +549,7 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
       if (opt.noRecs && /\/similar$/.test(path)) j = { results: [film(401, 'Similar Fresh', `${yr}-01-01`), film(402, 'Similar Old', '2005-01-01')] };
       else if (opt.noRecs && /\/recommendations$/.test(path)) j = { results: [] };
       else if (/\/recommendations$/.test(path)) j = { results: [film(201, 'Rec Fresh', `${yr}-01-01`), film(202, 'Rec Old', '2001-01-01'), film(101, 'Already Clipped', `${yr}-01-01`), ...Array.from({ length: 8 }, (_, i) => film(210 + i, 'Rec ' + i, `${yr - 1 - i}-06-01`))] };
-      else if (/watch\/providers/.test(path)) j = { results: {} };
+      else if (/watch\/providers/.test(path)) j = { results: opt.onWavve?.includes(Number(path.split('/')[3])) ? { KR: { flatrate: [{ provider_name: 'Wavve' }] } } : opt.onWavve ? { KR: { flatrate: [{ provider_name: 'Netflix' }] } } : {} };
       else if (/^\/3\/(movie|tv)\/\d+$/.test(path)) j = { id: Number(path.split('/').pop()), title: 'Detail ' + path.split('/').pop(), overview: 'overview text', genres: [{ id: 35 }] };
       else if (/search\/multi/.test(path)) j = { results: [film(301, 'Found Film', '2015-01-01')] };
       else if (/trending|popular/.test(path)) j = { results: [film(101, 'Liked One', '2015-01-01'), film(102, 'Liked Two', '2016-01-01'), film(103, 'Liked Three', '2017-01-01')] };
@@ -602,6 +602,37 @@ for (const [label, link] of [['no link', undefined], ['unsafe link', 'javascript
   [c, pg] = await mkCtx({ cl: JSON.stringify([{ id: 777, media_type: 'movie', title: 'Niche Film' }]), ts: 'true' }, { noRecs: true });
   await pg.goto(base + '/#/'); await pg.waitForFunction(() => /Picked for you/.test(document.querySelector('.lead-story .kicker')?.textContent || ''));
   ok((await pg.locator('.lead-story .kicker').textContent()).includes('Niche Film') && pg.pe.length === 0, 'picks: a clipping without TMDB recommendations falls back to its similar titles');
+  await c.close();
+
+  // 26. Picked for you shows only what the reader can watch on their own services
+  const cl3 = JSON.stringify([{ id: 101, media_type: 'movie', title: 'Liked One' }, { id: 102, media_type: 'movie', title: 'Liked Two' }, { id: 103, media_type: 'movie', title: 'Liked Three' }]);
+  // recommended titles: 201, 202, 210..217 -- only 201, 212 and 214 are on Wavve
+  [c, pg] = await mkCtx({ cl: cl3, ts: 'true' }, { onWavve: [201, 212, 214] });
+  await pg.goto(base + '/#/'); await pg.waitForFunction(() => /Picked for you/.test(document.querySelector('.lead-story .kicker')?.textContent || ''));
+  await pg.waitForTimeout(300);
+  const ids = await pg.evaluate(() => [...document.querySelectorAll('#lead a[href^="#/title/"], #picks a[href^="#/title/"]')].map(a => Number(a.getAttribute('href').split('/').pop())));
+  ok(ids.length >= 3 && ids.every(i => [201, 212, 214].includes(i)), 'picks: only titles on my services are suggested (lead, columns and grid): ' + [...new Set(ids)].join());
+  ok((await pg.locator('.lead-story .byline').textContent()).includes('Wavve'), 'picks: the lead says where to watch it');
+  ok(await pg.locator('#picks .note a[href="#/settings"]').count() === 0, 'picks: no "choose your services" hint when services are chosen');
+  await pg.goto(base + '/#/title/movie/3'); await pg.waitForSelector('.article');
+  ok(true, 'title page opens');
+  await c.close();
+  // the title page: "more like this" keeps only titles on my services (recs come from the detail response)
+  [c, pg] = await mkCtx({ ts: 'true' }, { onWavve: [501, 503] });
+  await pg.route('https://api.themoviedb.org/3/movie/9?*', r => r.fulfill({ json: { id: 9, title: 'Nine', overview: 'o', recommendations: { results: [501, 502, 503, 504].map(id => ({ id, title: 'R' + id, poster_path: '/a.jpg', release_date: '2020-01-01' })) } } }));
+  await pg.goto(base + '/#/title/movie/9'); await pg.waitForSelector('.article');
+  await pg.waitForFunction(() => document.querySelector('.recs') && !document.querySelector('.recs').hidden);
+  ok((await pg.locator('.recs .card').evaluateAll(c => c.map(x => x.dataset.k))).join() === 'movie:501,movie:503', 'title page: "more like this" lists only titles on my services');
+  await c.close();
+  // nothing recommended is on my services: no unwatchable suggestion, trending is filtered too (nothing there is watchable either)
+  [c, pg] = await mkCtx({ cl: cl3, ts: 'true' }, { onWavve: [99999] });
+  await pg.goto(base + '/#/'); await pg.waitForSelector('#lead .empty');
+  ok((await pg.locator('#lead .empty').textContent()).includes('on your services') && await pg.locator('#picks').isHidden(), 'picks: nothing watchable -> no suggestions, a plain note instead');
+  await c.close();
+  // no services chosen: nothing is filtered, and a hint says how to get watchable picks
+  [c, pg] = await mkCtx({ cl: cl3, ts: 'true' });
+  await pg.goto(base + '/#/'); await pg.waitForSelector('#picks:not([hidden]) .note a[href="#/settings"]');
+  ok(true, 'picks: without chosen services nothing is filtered and a hint points to Settings');
   await c.close();
 }
 
